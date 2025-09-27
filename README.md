@@ -11,23 +11,18 @@ Commands:
     pipeline    -combines the above in a single process
 ```
 
-**simulate** 
+![alt text](image.png)
 
-input : input.vcf
 
-output : simulated.vcf 
+## simulate
 
-1. parse the input VCF file seprate Svs by SV type (DEL,INS,INV,DUP,DUP:TANDEM)
-2. for each SV type, get the lengths and fit that data to a power-law distribution
-3. based on user input or based on the instances of each SV type in the original VCF, sample a length randomly for a SV
-4. build a SV event using that length into a structured VCF file
-5. repeat steps 3 and 4 until the target amount of SVs are produced
+**vcfparser.py**
 
-**insert**
+**simulator.py**
 
-input : simulated.vcf + input.fa 
+**vcfparser.py**
 
-output : simulated.fa 
+## insert
 
 
 ------
