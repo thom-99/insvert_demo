@@ -5,6 +5,8 @@ parses a VCF file and gets relevant informations that are fed to simulator.py
 it also allows to print some summary statistics of such informations
 '''
 
+# ADD TESTS FOR VALIDATING VCF 
+
 def parse_vcf(vcf_path:str):
     #parses a vcf and inserts information into a dictonary
     vcf = pysam.VariantFile(vcf_path)
