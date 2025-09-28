@@ -25,12 +25,38 @@ def sample(distr, params:tuple, n:int):
     return samples[:n].tolist()
 
 
+def simdict(realdict:dict):
+    # builds a simulated dictionary pulling lengths / copy numbers from fitted distributions
+    fakedict = {}
+
+    #looping through the first dict and applying fit & sample to the values
+    for svtype, fields in realdict.items():
+        fakedict[svtype] = {}
+
+        for field, values in fields.items():
+            n = len(values)
+            if n > 0:
+                distr, params = fit(values)
+                fakevalues = sample(distr, params, n)
+                fakedict[svtype][field] = fakevalues
+            else:
+                fakedict[svtype][field] = []
+        
+        return fakedict
+
+
+
+#checks
+
 vcfdata = vcfparser.parse_vcf('data/sniffles.vcf')
-insdata = vcfdata['INS']['lengths']
+#insdata = vcfdata['INS']['lengths']
 
-distr, params = fit(insdata)
-samples = sample(distr, params, 10000)
+#distr, params = fit(insdata)
+#samples = sample(distr, params, 10000)
 
-print(max(samples))
-print(min(samples))
-print(sum(samples)/len(samples))
+#print(max(samples))
+#print(min(samples))
+#print(sum(samples)/len(samples))
+
+fakedict = simdict(vcfdata)
+print(fakedict)

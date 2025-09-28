@@ -18,7 +18,25 @@ Commands:
 
 **vcfparser.py**
 
+dependancies: 
+- pysam
+
+input: path_to_vcf
+output: dictionary
+
+parses a vcf file and stores the relevant information for the simulation in a dictionary data structure
+
 **simulator.py**
+
+dependancies:
+- vcfparser.py
+- scipy (stats)
+
+input: dictionary
+output: simulated_dictionary
+
+starting from a dictionary containing information of SVs in a vcf file, simulator.py fits the data from each SV (such as lentghs and copy-number) to a lognormal distribution. Then it samples a *n* number of items from such distribution, such as to match the items in the original dictionary. 
+It then structures the data in a similar dictionary such as the one given as input, producing a specular structure with simulated data. 
 
 **vcfparser.py**
 
