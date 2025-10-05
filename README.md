@@ -57,3 +57,25 @@ for this purpose I used Saccharomyces [kudriavzevii](https://trace.ncbi.nlm.nih.
 
     mapping is done using [minimap2](https://github.com/lh3/minimap2), which is particularly suited for mapping long reads. A preliminary variant calling on the resulting bam file is performed with [sniffles](https://github.com/fritzsedlazeck/Sniffles) 
 
+2. 
+
+
+
+
+---
+
+# TO DO
+- check how to handle coordinates when building a VFC also thinking about the later step of FASTA modification
+
+
+for the final version:
+
+- try to use as few dependancies as possible
+- add option to avoid placing SVs near chrom ends (buffer by 1kb) def=FALSE
+- add option to simulate SNPs (fix loc parameter of lognormal to 0) (this will inevitably reduce the amount of large SVs) 
+
+
+
+
+
+
