@@ -63,3 +63,33 @@ class Deletion(StructuralVariant):
     
 del1 = Deletion('chX',90, 800, 'inSVert.DEL.1')
 print(del1.format())
+
+
+class Inversion(StructuralVariant):
+
+    def __init__(self, chrom, pos, length, id):
+        super().__init__(chrom, pos, length, id)
+
+    def get_alt(self):
+        return "<INV>"
+
+    def get_info(self):
+        END = self.pos + self.length
+        return f"SVTYPE=INV;SVLEN={self.length};END={END}"
+    
+inv1 = Inversion('chY',1000, 88, 'inSVert.INv.1')
+print(inv1.format())
+
+
+
+class Duplication(StructuralVariant):
+
+    def __init__(self, chrom, pos, length, id):
+        super().__init__(chrom, pos, length, id)
+
+    def get_alt(self):
+        return "<DUP>"
+    
+    def get_info(self):
+        END = self.pos + self.length
+        return f"SVTYPE=DUP;SVLEN={self.length};END={END}"
