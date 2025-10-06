@@ -65,10 +65,10 @@ for this purpose I used Saccharomyces [kudriavzevii](https://trace.ncbi.nlm.nih.
 ---
 
 # TO DO
+- implement how select a genomic region in a chromosome in utils.py without going near the chromosme ends
 - check how to handle coordinates when building a VFC also thinking about the later step of FASTA modification
 - implement DUP:TANDEM
 
-- implementing regular DUP might be not trivial at all, this **MIGHT** require to edit the fasta reference. However there might be some way to get around that. 
 
 
 for the final version:

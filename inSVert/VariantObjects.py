@@ -46,8 +46,7 @@ class Insertion(StructuralVariant):
         END = self.pos
         return f"SVTYPE=INS;SVLEN={self.length};END={END}"
 
-ins1 = Insertion('ch1', 1000, 55, 'inSVert.INS.1')
-print(ins1.format())
+
 
 class Deletion(StructuralVariant):
 
@@ -61,8 +60,6 @@ class Deletion(StructuralVariant):
         END = self.pos + self.length
         return f"SVTYPE=DEL;SVLEN={self.length};END={END}"
     
-del1 = Deletion('chX',90, 800, 'inSVert.DEL.1')
-print(del1.format())
 
 
 class Inversion(StructuralVariant):
@@ -77,8 +74,6 @@ class Inversion(StructuralVariant):
         END = self.pos + self.length
         return f"SVTYPE=INV;SVLEN={self.length};END={END}"
     
-inv1 = Inversion('chY',1000, 88, 'inSVert.INv.1')
-print(inv1.format())
 
 
 
@@ -102,5 +97,14 @@ class Duplication(StructuralVariant):
         return f"{self.chrom}\t{self.pos}\t{self.id}\t{self.ref}\t{alt}\t{self.qual}\t{self.filter}\t{info}\tGT:CN\t1/1:{self.copy_number}"
     
 
+"""
+# test
+ins1 = Insertion('ch1', 1000, 55, 'inSVert.INS.1')
+print(ins1.format())
+del1 = Deletion('chX',90, 800, 'inSVert.DEL.1')
+print(del1.format())
+inv1 = Inversion('chY',1000, 88, 'inSVert.INv.1')
+print(inv1.format())
 dup1 = Duplication('chr1', 10000, 5000, 'inSVert.DUP.1', copy_number=4)
 print(dup1.format())
+"""

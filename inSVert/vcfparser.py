@@ -68,9 +68,6 @@ def print_summary(sv_data:dict):
 
 
 
-
-
-
 # ensuring vcfparser still works as a command line script when running it directly
 if __name__ == "__main__":
     import sys
