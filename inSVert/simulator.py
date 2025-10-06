@@ -25,6 +25,8 @@ def sample(distr, params:tuple, n:int):
     return samples[:n].tolist()
 
 
+# FIX, DOES NOT PRODODUCE THE OTHER SVTYPES EXCEPT INS
+
 def simdict(realdict:dict):
     # builds a simulated dictionary pulling lengths / copy numbers from fitted distributions
     fakedict = {}
@@ -35,20 +37,26 @@ def simdict(realdict:dict):
 
         for field, values in fields.items():
             n = len(values)
-            if n > 0:
+            if n > 5:
+                # if there are sufficient entries, fit
                 distr, params = fit(values)
                 fakevalues = sample(distr, params, n)
                 fakedict[svtype][field] = fakevalues
             else:
-                fakedict[svtype][field] = []
+                # keep the original values but in reverse order
+                fakevalues = reversed(values)
+                fakedict[svtype][field] = fakevalues
         
-        return fakedict
+    return fakedict
 
 
+
+        
 
 #checks
 
 vcfdata = vcfparser.parse_vcf('data/sniffles.vcf')
+print(vcfdata)
 #insdata = vcfdata['INS']['lengths']
 
 #distr, params = fit(insdata)

@@ -84,8 +84,9 @@ print(inv1.format())
 
 class Duplication(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id):
+    def __init__(self, chrom, pos, length, id, copy_number:int):
         super().__init__(chrom, pos, length, id)
+        self.copy_number = copy_number
 
     def get_alt(self):
         return "<DUP>"
@@ -93,3 +94,13 @@ class Duplication(StructuralVariant):
     def get_info(self):
         END = self.pos + self.length
         return f"SVTYPE=DUP;SVLEN={self.length};END={END}"
+    
+    def format(self) -> str:
+        #overrides the format method of the parent class : adds details of DUPs 
+        alt = self.get_alt()
+        info = self.get_info()
+        return f"{self.chrom}\t{self.pos}\t{self.id}\t{self.ref}\t{alt}\t{self.qual}\t{self.filter}\t{info}\tGT:CN\t1/1:{self.copy_number}"
+    
+
+dup1 = Duplication('chr1', 10000, 5000, 'inSVert.DUP.1', copy_number=4)
+print(dup1.format())
