@@ -176,3 +176,38 @@ def select_chr(chroms, lengths):
     chrom_idx = chroms.index(chrom)
 
     return chrom, lengths[chrom_idx]    
+
+'''
+SELECTS A RANDOM POSITION ALONG THE SPECIFIED CHROMSOME
+optionally it can avoid choosing positions too close to the chr end
+'''
+def select_pos(chrom, length, buffer=1000):
+
+    if buffer > length/10:
+        raise ValueError(f'edge buffer :{buffer} is too big, try decreasing it')
+    
+    position = np.random.randint(1 + buffer, length - buffer + 1)
+
+    return position
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
