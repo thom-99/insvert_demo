@@ -1,5 +1,6 @@
 import VariantObjects
 import utils
+import datetime
 
 
 # implement the code below with args from sys
@@ -10,29 +11,41 @@ fakedict = utils.simdict(realdict)
 chroms, lengths = utils.read_fai('data/cerevisiae.fa')
 
 
-lines = []
 
-for svtype in fakedict:
-    if svtype == 'INS':
-        for l in fakedict['INS']['lengths']:
-            chrom, length = utils.select_chr(chroms, lengths)
-            pos = utils.select_pos(chrom, length)
-
-            count=1
-            id = f'inSVert.{svtype}.{count}'
-
-            INS = VariantObjects.Insertion(chrom, pos, l, id)
-            lines.append(INS.format())
+with open('data/inSVert.vcf', 'w') as vcf:
+    # Write header
+    vcf.write("##fileformat=VCFv4.2\n")
+    vcf.write(f"##fileDate={datetime.date.today().strftime('%Y%m%d')}\n")
+    vcf.write('##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">\n')
+    vcf.write('##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant">\n')
+    vcf.write('##INFO=<ID=END,Number=1,Type=Integer,Description="End position of structural variant">\n')
+    vcf.write('##ALT=<ID=DEL,Description="Deletion">\n')
+    vcf.write('##ALT=<ID=INS,Description="Insertion">\n')
+    vcf.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n')
+    vcf.write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n")
     
-    if svtype == 'DEL':
-        for l in fakedict['DEL']['lengths']:    
-            chrom, length = utils.select_chr(chroms, lengths)
-            pos = utils.select_pos(chrom, length)
+    count = 1
 
-            count=1
-            id = f'inSVert.{svtype}.{count}'
+    for svtype in fakedict:
+        if svtype == 'INS':
+            for l in fakedict['INS']['lengths']:
+                chrom, length = utils.select_chr(chroms, lengths)
+                pos = utils.select_pos(chrom, length)
 
-            DEL = VariantObjects.Deletion(chrom, pos, l, id)
-            lines.append(DEL.format())
+                id = f'inSVert.{svtype}.{count}'
+                count += 1
 
-print(lines)
+                INS = VariantObjects.Insertion(chrom, pos, l, id)
+                vcf.write(INS.format() + '\n')
+    
+        if svtype == 'DEL':
+            for l in fakedict['DEL']['lengths']:    
+                chrom, length = utils.select_chr(chroms, lengths)
+                pos = utils.select_pos(chrom, length)
+
+
+                id = f'inSVert.{svtype}.{count}'
+                count += 1 
+
+                DEL = VariantObjects.Deletion(chrom, pos, l, id)
+                vcf.write(DEL.format() + '\n')
