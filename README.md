@@ -60,7 +60,7 @@ for this purpose I used Saccharomyces [kudriavzevii](https://trace.ncbi.nlm.nih.
 2. 
 
 
-
+checked validity of the VCF file with vcftools (vcf-validator) 
 
 ---
 
@@ -74,7 +74,6 @@ for this purpose I used Saccharomyces [kudriavzevii](https://trace.ncbi.nlm.nih.
 for the final version:
 
 - try to use as few dependancies as possible
-- add option to avoid placing SVs near chrom ends (buffer by 1kb) def=FALSE
 - add option to simulate SNPs (fix loc parameter of lognormal to 0) (this will inevitably reduce the amount of large SVs) 
 
 

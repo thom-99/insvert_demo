@@ -5,6 +5,7 @@ import pysam
 import os 
 import sys
 import numpy as np
+import datetime
 from scipy import stats
 
 
@@ -195,19 +196,42 @@ def select_pos(chrom, length, buffer=1000):
 
 
 
+'''
+BUILDS A COMPLETE HEADER FOR A VCF FILE
+given the chroms, lengths (easily accessible through read_fai it also builds contigs lines)
+'''
+def buildheader(chroms, lengths, reference_path=None):
 
+    header_lines = []
 
+    header_lines.append("##fileformat=VCFv4.2")
+    header_lines.append("##source=inSVert")
+    header_lines.append(f"##fileDate={datetime.date.today().strftime('%Y%m%d')}")
 
+    # optional reference path
+    if reference_path:
+        header_lines.append(f"##fileDate={datetime.date.today().strftime('%Y%m%d')}")
+    
+    # contig lines 
+    for chrom, length in zip(chroms, lengths):
+        header_lines.append(f"##contig=<ID={chrom},length={length}>")    
 
+    # INFO fields
+    header_lines.append('##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">')
+    header_lines.append('##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant">')
+    header_lines.append('##INFO=<ID=END,Number=1,Type=Integer,Description="End position of structural variant">')
 
+    # ALT fields
+    header_lines.append('##ALT=<ID=DEL,Description="Deletion">')
+    header_lines.append('##ALT=<ID=INS,Description="Insertion">')
+    header_lines.append('##ALT=<ID=DUP,Description="Duplication">')
+    header_lines.append('##ALT=<ID=INV,Description="Inversion">')
 
+    # FORMAT fields
+    header_lines.append('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">')
+    header_lines.append('##FORMAT=<ID=CN,Number=1,Type=Integer,Description="Copy number">')
 
+    header_lines.append("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE")
 
-
-
-
-
-
-
-
+    return '\n'.join(header_lines) + 'n'
 
