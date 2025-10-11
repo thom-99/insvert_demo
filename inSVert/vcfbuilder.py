@@ -54,7 +54,8 @@ with open(output_file, 'w') as vcf:
                 pos = utils.select_pos(chrom, chrom_length)
                 id = f'inSVert.{svtype}.{count}'
                 count += 1 
-
+                
+                l = -l # deletions require negative lengths, previously they have been made positive for statistical fitting
                 DEL = VariantObjects.Deletion(chrom, pos, l, id)
 
                 # while loop to produce valid pos to allow END to be within chromsome bounds

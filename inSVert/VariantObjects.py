@@ -58,13 +58,15 @@ class Insertion(StructuralVariant):
 class Deletion(StructuralVariant):
 
     def __init__(self, chrom, pos, length, id):
+        if length>= 0:
+            raise ValueError(f"Deletion length must be negative, got {length} instead")
         super().__init__(chrom, pos, length, id)
 
     def get_alt(self):
         return "<DEL>"
     
     def get_end(self):
-        return self.pos + self.length
+        return self.pos + abs(self.length)
 
     def get_info(self):
         END = self.get_end()
