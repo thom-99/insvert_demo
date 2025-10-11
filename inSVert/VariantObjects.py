@@ -21,9 +21,13 @@ class StructuralVariant(ABC):
         pass
 
     @abstractmethod
+    def get_end(self) -> str:
+        # each svtype processes END differently
+        pass
+
+    @abstractmethod
     def get_info(self) -> str:
         #return the info field
-        # END = each SVTYPE processes END differently
         pass
 
     def format(self) -> str:
@@ -42,8 +46,11 @@ class Insertion(StructuralVariant):
     def get_alt(self):
         return "<INS>" #for now, I'll keep the symbolic alt
     
+    def get_end(self):
+        return self.pos
+    
     def get_info(self):
-        END = self.pos
+        END = self.get_end()
         return f"SVTYPE=INS;SVLEN={self.length};END={END}"
 
 
@@ -55,9 +62,12 @@ class Deletion(StructuralVariant):
 
     def get_alt(self):
         return "<DEL>"
+    
+    def get_end(self):
+        return self.pos + self.length
 
     def get_info(self):
-        END = self.pos + self.length
+        END = self.get_end()
         return f"SVTYPE=DEL;SVLEN={self.length};END={END}"
     
 
@@ -70,8 +80,11 @@ class Inversion(StructuralVariant):
     def get_alt(self):
         return "<INV>"
 
+    def get_end(self):
+        return self.pos + self.length
+
     def get_info(self):
-        END = self.pos + self.length
+        END = self.get_end()
         return f"SVTYPE=INV;SVLEN={self.length};END={END}"
     
 
@@ -86,8 +99,11 @@ class Duplication(StructuralVariant):
     def get_alt(self):
         return "<DUP>"
     
+    def get_end(self):
+        return self.pos + self.length
+
     def get_info(self):
-        END = self.pos + self.length
+        END = self.get_end()
         return f"SVTYPE=DUP;SVLEN={self.length};END={END}"
     
     def format(self) -> str:
