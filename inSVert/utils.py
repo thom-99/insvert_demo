@@ -193,9 +193,6 @@ def select_pos(chrom, length, buffer=1000):
 
 
 
-
-
-
 '''
 BUILDS A COMPLETE HEADER FOR A VCF FILE
 given the chroms, lengths (easily accessible through read_fai it also builds contigs lines)
@@ -233,5 +230,5 @@ def buildheader(chroms, lengths, reference_path=None):
 
     header_lines.append("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE")
 
-    return '\n'.join(header_lines) + 'n'
+    return '\n'.join(header_lines) + '\n'
 

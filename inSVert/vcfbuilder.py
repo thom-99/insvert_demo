@@ -18,6 +18,10 @@ fakedict = utils.simdict(realdict)
 
 chroms, lengths = utils.read_fai(fasta_path)
 
+
+# IT MIGHT BE THAT THE CONTIG IS TOO SHORT, IMPLEMENT A COUNTER : IF IT FAILS 3 TIMES TO PLACE THE SV IN THE CHR, CHOOSE ANOTHER CHR 
+# IMPLEMENT THIS IN A FINCTION IN UTILS.PY
+
 with open(output_file, 'w') as vcf:
  
     header = utils.buildheader(chroms, lengths, fasta_path)
