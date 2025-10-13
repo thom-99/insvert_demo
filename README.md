@@ -16,34 +16,30 @@ Commands:
 
 ## simulate
 
-### vcfparser.py
+input: 
+- fasta reference 
+- vcf file 
 
-dependancies: 
-- pysam
+output:
+- simulated vcf 
+- bed track file (optional) 
 
-input: path_to_vcf
 
-output: dictionary
-
-parses a vcf file and stores the relevant information for the simulation in a dictionary data structure
-
-### simulator.py
-
-dependancies:
-- vcfparser.py
-- scipy (stats)
-
-input: dictionary
-
-output: simulated_dictionary
-
-starting from a dictionary containing information of SVs in a vcf file, simulator.py fits the data from each SV (such as lentghs and copy-number) to a lognormal distribution. Then it samples a *n* number of items from such distribution, such as to match the items in the original dictionary. 
-It then structures the data in a similar dictionary such as the one given as input, producing a specular structure with simulated data. 
-
-### vcfparser.py
+1. given an input VCF file, it parses it and extract all the relevant data regarding the lengths and eventual copy-numbers of the SVs contained in the VCF.
+2. a lognormal distribution is built using that data, one for each sv-type, using the scipy.stats library.
+3. an X amount of SVs is sampled from that distribution and stored into an accessible data structure.
+4. the fasta.fai index file is read and all the information regarding the chromosomes and their relative lengths is collected
+5. a chromsome is randomly selected (taking into account the relative lengths of each) and a random position is selected along that chromosome
+6. an instance of a StructuralVariant object is built using a length collected in step 3) and the chromosome and position collected at step 5)
+7. all the relevant information is registered into a bed file, which is used to keep track of where all the SVs are. 
+8. the StructuralVariant objects can be formatted into a line of a VCF file, essentially a SV entry and the VCF file is built incrementally. 
 
 ## insert
+given an input fasta file, from which the VCF file is based on (this can be checked from the source line of the VCF header), the SV in the VCF are programmatically placed in a copy of the fasta reference. The SVs are placed in sorted order, to avoid indexing conflicts, moreover an index for each chromosome/contig is kept to place correctly the next SVs. 
 
+bottlenecks:
+- the whole reference genome has to be loaded into memory, sucking up a huge amount of RAM
+- non tandem DUPs are hard to deal with, they are scattered across the genome and need to be processed as last.
 
 ------
 ------
@@ -60,16 +56,22 @@ for this purpose I used Saccharomyces [kudriavzevii](https://trace.ncbi.nlm.nih.
 2. 
 
 
-checked validity of the VCF file with vcftools (vcf-validator) 
+checked validity of the VCF file with vcftools (vcf-validator)
+
+ 
 
 ---
 
 # TO DO
-- implement how select a genomic region in a chromosome in utils.py without going near the chromosme ends
 - check how to handle coordinates when building a VFC also thinking about the later step of FASTA modification
 - implement DUP:TANDEM
 
-
+BUILD INSERT MODULE
+- load entire fasta into memory as a dict 
+- sort VCF
+- build a BED or TSV file with all the relevant information (chr, pos, end, length, sequence (INS;DUP), dup-number, copies-regions (DUP))
+- process SV sequentially by chr, pos
+- each time you insert a SV, update the index (process)
 
 for the final version:
 
