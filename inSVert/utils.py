@@ -232,3 +232,14 @@ def buildheader(chroms, lengths, reference_path=None):
 
     return '\n'.join(header_lines) + '\n'
 
+
+'''
+FUNCTION TO CHECK WETHER A SV OVERLAPS WITH ANOTHER PRE-EXISTING ONE
+the pre-existing SVs are stored in a dictionary {chrom : [(pos, end)]}
+'''
+def overlaps(chrom, start, end, sv_positions:dict):
+    for existing_start, existing_end in sv_positions[chrom]:
+        # the intervals do not overlap if the new interval ends before an existing one starts or if starts before the existing one ends
+        if not (end < existing_start or start > existing_end):
+            return True # it overlaps
+    return False

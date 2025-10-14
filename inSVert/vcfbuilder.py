@@ -1,6 +1,7 @@
 import VariantObjects
 import utils
 import sys
+from collections import defaultdict
 
 if len(sys.argv) != 4:
     print("Usage: python script.py <vcf_path> <fasta_path> <output_file>")
@@ -10,13 +11,12 @@ vcf_path = sys.argv[1]
 fasta_path = sys.argv[2]
 output_file = sys.argv[3]
 
-
-
-
 realdict = utils.parse_vcf(vcf_path)
 fakedict = utils.simdict(realdict)
 
 chroms, lengths = utils.read_fai(fasta_path)
+
+sv_positions = defaultdict(list) # {chrom : [(pos, end),(pos2, end2)]}
 
 
 # IT MIGHT BE THAT THE CONTIG IS TOO SHORT, IMPLEMENT A COUNTER : IF IT FAILS 3 TIMES TO PLACE THE SV IN THE CHR, CHOOSE ANOTHER CHR 
@@ -42,12 +42,15 @@ with open(output_file, 'w') as vcf:
 
                 INS = VariantObjects.Insertion(chrom, pos, l, id)
 
-                # while loop to produce valid pos to allow END to be within chromsome bounds
-                while INS.get_end() > chrom_length:
-                    print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
+                # if either the SV is placed out of chromsome bounds or overlapping with another SV
+                # then another chromsome and position are chosen for the SV
+                while INS.get_end() > chrom_length or utils.overlaps(chrom, pos, INS.get_end(), sv_positions):
+                    print(f'{svtype} exceeds the chormsome boundaries or overlaps with another SV, fetching a new position')
                     pos = utils.select_pos(chrom, chrom_length)
-                    INS = VariantObjects(chrom, pos, l, id)
+                    INS = VariantObjects.Insertion(chrom, pos, l, id)
                 
+                # log SV and format a VCF line
+                sv_positions[chrom].append((pos, INS.get_end()))
                 vcf.write(INS.format() + '\n')
     
         if svtype == 'DEL':
@@ -62,12 +65,12 @@ with open(output_file, 'w') as vcf:
                 l = -l # deletions require negative lengths, previously they have been made positive for statistical fitting
                 DEL = VariantObjects.Deletion(chrom, pos, l, id)
 
-                # while loop to produce valid pos to allow END to be within chromsome bounds
-                while DEL.get_end() > chrom_length:
+                while DEL.get_end() > chrom_length or utils.overlaps(chrom, pos, DEL.get_end(), sv_positions):
                     print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
                     pos = utils.select_pos(chrom, chrom_length)
-                    DEL = VariantObjects(chrom, pos, l, id)
+                    DEL = VariantObjects.Deletion(chrom, pos, l, id)
 
+                sv_positions[chrom].append((pos, DEL.get_end()))
                 vcf.write(DEL.format() + '\n')
 
         if svtype == 'INV':
@@ -82,11 +85,12 @@ with open(output_file, 'w') as vcf:
                 INV = VariantObjects.Inversion(chrom, pos, l, id)
 
                 # loop to produce valid pos to allow END to be within chromsome bounds
-                while INV.get_end() > chrom_length:
+                while INV.get_end() > chrom_length or utils.overlaps(chrom, pos, INV.get_end(), sv_positions):
                     print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
                     pos = utils.select_pos(chrom, chrom_length)
-                    INV = VariantObjects(chrom, pos, l, id)
+                    INV = VariantObjects.Inversion(chrom, pos, l, id)
 
+                sv_positions[chrom].append((pos, INV.get_end()))                
                 vcf.write(INV.format() + '\n')
 
         if svtype == 'DUP':
@@ -101,11 +105,12 @@ with open(output_file, 'w') as vcf:
                 DUP = VariantObjects.Duplication(chrom, pos, l, id)
 
                 # loop to produce valid pos to allow END to be within chromsome bounds
-                while DUP.get_end() > chrom_length:
+                while DUP.get_end() > chrom_length or utils.overlaps(chrom, pos, DUP.get_end(), sv_positions):
                     print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
                     pos = utils.select_pos(chrom, chrom_length)
-                    DUP = VariantObjects(chrom, pos, l, id)
+                    DUP = VariantObjects.Duplication(chrom, pos, l, id)
 
+                sv_positions[chrom].append((pos, DUP.get_end()))
                 vcf.write(DUP.format() + '\n')
 
 
