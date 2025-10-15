@@ -11,7 +11,7 @@ Commands:
     pipeline    -combines the above in a single process
 ```
 
-![alt text](img/inSVert_workflow.png)
+![alt text](img/updated_workflow.png)
 
 
 ## simulate
@@ -19,13 +19,14 @@ Commands:
 input: 
 - fasta reference 
 - vcf file 
+or 
+- user defined parameters to generate SVs (--manual option)
 
 output:
-- simulated vcf 
-- bed track file (optional) 
+- simulated.vcf 
+- dup.tsv file 
 
-
-1. given an input VCF file, it parses it and extract all the relevant data regarding the lengths and eventual copy-numbers of the SVs contained in the VCF.
+1. given an input VCF file, it parses it and extract all the relevant data regarding the lengths and eventual copy-numbers of the SVs contained in the VCF. Using the --manual option, it is the user that specifies this information in the command line or in a config.txt file (still have to decide) as well as the parameters of the lognormal.
 2. a lognormal distribution is built using that data, one for each sv-type, using the scipy.stats library.
 3. an X amount of SVs is sampled from that distribution and stored into an accessible data structure.
 4. the fasta.fai index file is read and all the information regarding the chromosomes and their relative lengths is collected
@@ -33,6 +34,8 @@ output:
 6. an instance of a StructuralVariant object is built using a length collected in step 3) and the chromosome and position collected at step 5)
 7. all the relevant information is registered into a bed file, which is used to keep track of where all the SVs are. 
 8. the StructuralVariant objects can be formatted into a line of a VCF file, essentially a SV entry and the VCF file is built incrementally. 
+
+
 
 ## insert
 given an input fasta file, from which the VCF file is based on (this can be checked from the source line of the VCF header), the SV in the VCF are programmatically placed in a copy of the fasta reference. The SVs are placed in sorted order, to avoid indexing conflicts, moreover an index for each chromosome/contig is kept to place correctly the next SVs. 
