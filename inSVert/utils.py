@@ -44,9 +44,10 @@ def parse_vcf(vcf_path:str):
             
             # for duplications, get also copy number
             if svtype == 'DUP':
-                copy_number = SV.info.get("CN")
-                if copy_number is not None:
-                    sv_data[svtype]['copy_numbers'].append(copy_number)
+                if "CN" in SV.info:
+                    copy_number = SV.info.get("CN")
+                    if copy_number is not None:
+                        sv_data[svtype]['copy_numbers'].append(copy_number)
 
     vcf.close()
     return sv_data

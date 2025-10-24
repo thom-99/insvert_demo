@@ -2,13 +2,13 @@
 
 # === quick check ===
 if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <reference.fasta> <reads.fastx> <oudir>"
+    echo "Usage: $0 <reference.fasta> <reads_1.fastx> <oudir>"
     exit 1
 fi
 
 # === inputs ===
 REFERENCE_FA=$(realpath "$1")
-READS=$(realpath "$2")
+READS1=$(realpath "$2")
 mkdir -p "$3"
 OUTDIR=$(realpath "$3")
 
@@ -19,7 +19,7 @@ OUTDIR=$(realpath "$3")
 conda run -n demo samtools faidx "$REFERENCE_FA"
 conda run -n demo minimap2 -d "${OUTDIR}/reference.mmi" "$REFERENCE_FA"
 conda run -n demo bash -c "
-minimap2 -x map-ont -t 8 -a '$REFERENCE_FA' '$READS' \
+minimap2 -x map-pb -t 8 -a '$REFERENCE_FA' '$READS1' \
     | samtools view -bS -@8 - \
     | samtools sort -@8 -o '${OUTDIR}/sorted.bam' -
 "
