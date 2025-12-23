@@ -9,10 +9,10 @@ fi
 # === input arguments ===
 BAM=$(realpath "$1")
 FASTA=$(realpath "$2")
-OUTPUT_VCF="$2"
+OUTPUT_VCF="$3"
 
 mkdir -p cutesv_workingdir
 
 conda run -n demo cuteSV --threads 8 "$BAM" "$FASTA" "$OUTPUT_VCF" cutesv_workingdir
 
-rm -rf cutesv_workingdir 
+rm -rf cutesv_workingdir

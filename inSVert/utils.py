@@ -4,121 +4,93 @@ MISCELLANEOUS COLLECTION OF FUNCTIONS OF INSVERT
 import pysam
 import os 
 import sys
+import yaml
 import numpy as np
 import datetime
 from scipy import stats
 
 
-'''
-PARSES A VCF FILE WITH PYSAM AND INSERTS INFORMATION INTO A DICTIONARY
-'''
-def parse_vcf(vcf_path:str):
-    #parses a vcf and inserts information into a dictonary
-    vcf = pysam.VariantFile(vcf_path)
+import yaml
+import numpy as np
+
+def calculate_lognormal_params(mean_bp, sigma_bp):
+    """
+    Helper: Converts arithmetic mean and standard deviation (in bp) 
+    to lognormal underlying parameters (mu and sigma).
+    """
+    variance = sigma_bp ** 2
+    sigma = np.sqrt(np.log(variance / (mean_bp ** 2) + 1))
+    mu = np.log(mean_bp) - (sigma ** 2 / 2)
+    return mu, sigma
+
+def parse_config(config_path):
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
     
-    sv_data = {
-        'INS': {
-            'lengths': [],
-        },
-        'DEL': {
-            'lengths': [],
-        },
-        'DUP': {
-            'lengths': [],
-            'copy_numbers': [],  
-        },
-        'INV': {
-            'lengths': [],
-        }
-    }
-
-    for SV in vcf:
-        svtype = SV.info.get("SVTYPE")
-        if svtype in sv_data:
-            # get SV length
-            sv_length = SV.info.get("SVLEN")
-            if sv_length is not None:
-                # SVLEN can be negative for deletions, take absolute value
-                sv_length = abs(sv_length)
-                sv_data[svtype]['lengths'].append(sv_length)
+    sv_data = {}
+    
+    # Iterate through the variants defined in YAML
+    for sv_type, settings in config['variants'].items():
+        count = settings['count']
+        dist_type = settings['distribution']
+        params = settings['parameters']
+        
+        lengths = []
+        
+        # GENERATE LENGTHS
+        if dist_type == "lognormal":
             
-            # for duplications, get also copy number
-            if svtype == 'DUP':
-                if "CN" in SV.info:
-                    copy_number = SV.info.get("CN")
-                    if copy_number is not None:
-                        sv_data[svtype]['copy_numbers'].append(copy_number)
+            user_mean = params['mean_length']
+            user_sigma = params.get('sigma', user_mean * 0.5) # Default sigma to half of mean if missing
+            
+            mu, sigma = calculate_lognormal_params(user_mean, user_sigma)
+            
+            lengths = []
+            while len(lengths) < count:
+                
+                # sample 1 obs
+                sample = np.random.lognormal(mu, sigma)
+                val = int(sample)
+    
+                # check if between min and max length
+                if params['min_length'] <= val <= params['max_length']:
+                    lengths.append(val)
 
-    vcf.close()
+            
+        sv_data[sv_type] = {'lengths': lengths}
+        
+
+        # GENERATE COPY NUMBERS (specific to DUP)
+        if sv_type == 'DUP' and 'copy_number' in settings:
+            cn_settings = settings['copy_number']
+            cn_min = cn_settings['min']
+            cn_max = cn_settings['max']
+            weights = cn_settings.get('weights')
+
+            # Create array of possible values (e.g. [2, 3, 4, 5])
+            possible_cns = np.arange(cn_min, cn_max + 1)
+            
+            # check and normalize weights to sum 1
+            probs = None
+            if weights:
+                if len(weights) != len(possible_cns):
+                    raise ValueError(
+                        f"Config Error: DUP weights count ({len(weights)}) "
+                        f"does not match copy number range {cn_min}-{cn_max} ({len(possible_cns)} values)."
+                    )
+                
+                weights = np.array(weights)
+                probs = weights / weights.sum()
+            
+            # Sample Copy Numbers based on weights
+            # choice() picks 'count' items from 'possible_cns' using 'probs'
+            copy_numbers = np.random.choice(possible_cns, size=count, p=probs).tolist()
+            
+            sv_data[sv_type]['copy_numbers'] = copy_numbers
+    
     return sv_data
 
-
-'''
-PRINTS OPTIONAL SUMMARY OF THE ABOVE
-'''
-def print_summary(sv_data:dict):
-    # optional summary statistics for parsed SV
-    print("Structural Variant Summary:")
-    print("-" * 30)
-    for sv_type in sv_data:
-        count = len(sv_data[sv_type]['lengths'])
-        print(f"{sv_type}: {count} variants")
-        if count > 0:
-            lengths = sv_data[sv_type]['lengths']
-            print(f"  Length range: {min(lengths)} - {max(lengths)} bp")
-            print(f"  Mean length: {int(sum(lengths) / len(lengths))} bp")
-            
-            if sv_type == 'DUP' and sv_data[sv_type]['copy_numbers']:
-                cn_values = sv_data[sv_type]['copy_numbers']
-                print(f"  Copy numbers: {min(cn_values)} - {max(cn_values)}")
-        print()
-    print("-" * 30)
-
-
-'''
--------------------------------------------------------------------------------------------------
-'''
-
-'''
-FITS AN ARRAY OF NUMBERS TO A LOGNORMAL DISTRIBUTION
-returns the distribution and the resulting estimated parameters
-'''
-def fit(data:list):
-    distr = getattr(stats,'lognorm')
-    params = distr.fit(data)
-    return distr, params 
-
-def sample(distr, params:tuple, n:int):
-    # sample n values from a fitted distribution
-    samples = distr.rvs(*params, size=n)
-    samples = samples.astype(int)
-    return samples[:n].tolist()
-
-'''
-PRODUCES A SIMULATED DICTIONARY WITH LENGTHS / COPY-NUMBERS SAMPLED FROM THE LOGNORMAL
-the input is the dictionary of real values extracted from the VCF,
-it fits the values for each field of each svtype and samples from it.
-'''
-def simdict(realdict:dict):
-    fakedict = {}
-
-    #looping through the first dict and applying fit & sample to the values
-    for svtype, fields in realdict.items():
-        fakedict[svtype] = {}
-
-        for field, values in fields.items():
-            n = len(values)
-            if n > 5:
-                # if there are sufficient entries, fit
-                distr, params = fit(values)
-                fakevalues = sample(distr, params, n)
-                fakedict[svtype][field] = fakevalues
-            else:
-                # keep the original values but in reverse order
-                fakevalues = values[::-1]
-                fakedict[svtype][field] = fakevalues
-        
-    return fakedict
+print(parse_config('inSVert/config.yaml'))
 
 '''
 -----------------------------------------------------------------------------------------------
@@ -144,7 +116,7 @@ def read_fai(fasta_path):
         print(f'index file not found, creating index for {fasta_file}')
         try:
             pysam.faidx(fasta_file)
-            print(f'index file created successfully : {fai_file}', file=sys.sterr)
+            print(f'index file created successfully : {fai_file}', file=sys.stderr)
         except Exception as e:
             raise RuntimeError(f'failed to create fasta index file: {e}')
 
@@ -208,7 +180,7 @@ def buildheader(chroms, lengths, reference_path=None):
 
     # optional reference path
     if reference_path:
-        header_lines.append(f"##fileDate={datetime.date.today().strftime('%Y%m%d')}")
+        header_lines.append(f"##reference={reference_path}")
     
     # contig lines 
     for chrom, length in zip(chroms, lengths):
