@@ -41,7 +41,9 @@ def parse_config(config_path):
         if dist_type == "lognormal":
             
             user_mean = params['mean_length']
-            user_sigma = params.get('sigma', user_mean * 0.5) # Default sigma to half of mean if missing
+            user_sigma = params.get('sigma')
+            if user_sigma is None:
+                user_sigma = user_mean*0.5
             
             mu, sigma = calculate_lognormal_params(user_mean, user_sigma)
             
@@ -90,7 +92,7 @@ def parse_config(config_path):
     
     return sv_data
 
-print(parse_config('inSVert/config.yaml'))
+#print(parse_config('inSVert/config.yaml'))
 
 '''
 -----------------------------------------------------------------------------------------------

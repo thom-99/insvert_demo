@@ -4,26 +4,23 @@ import sys
 from collections import defaultdict
 
 if len(sys.argv) != 4:
-    print("Usage: python script.py <vcf_path> <fasta_path> <output_file>")
+    print("Usage: python script.py <config.yaml_path> <fasta_path> <output_file>")
     sys.exit(1)
 
-vcf_path = sys.argv[1]
+config_path = sys.argv[1]
 fasta_path = sys.argv[2]
 output_file = sys.argv[3]
 
-realdict = utils.parse_vcf(vcf_path)
-fakedict = utils.simdict(realdict)
+fakedict = utils.parse_config(config_path)
 
 chroms, lengths = utils.read_fai(fasta_path)
 
 sv_positions = defaultdict(list) # {chrom : [(pos, end),(pos2, end2)]}
 
 
-# IT MIGHT BE THAT THE CONTIG IS TOO SHORT, IMPLEMENT A COUNTER : IF IT FAILS 3 TIMES TO PLACE THE SV IN THE CHR, CHOOSE ANOTHER CHR 
-# IMPLEMENT THIS IN A FINCTION IN UTILS.PY
 
 with open(output_file, 'w') as vcf:
- 
+
     header = utils.buildheader(chroms, lengths, fasta_path)
     vcf.write(header)
 
@@ -112,7 +109,7 @@ with open(output_file, 'w') as vcf:
                     vcf.write(INV.format() + '\n')
 
         if svtype == 'DUP':
-            for l in fakedict['DUP']['lengths']:   
+            for l,cn in zip(fakedict['DUP']['lengths'], fakedict['DUP']['copy_numbers']):   
 
                 # collect arguments for SV object 
                 chrom, chrom_length = utils.select_chr(chroms, lengths)
@@ -120,7 +117,7 @@ with open(output_file, 'w') as vcf:
                 id = f'inSVert.{svtype}.{count}'
                 count += 1 
 
-                DUP = VariantObjects.Duplication(chrom, pos, l, id)
+                DUP = VariantObjects.Duplication(chrom, pos, l, id, copy_number=cn)
 
                 # loop to produce valid pos to allow END to be within chromsome bounds
                 attempts = 0
@@ -131,7 +128,7 @@ with open(output_file, 'w') as vcf:
                         break                     
                     print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
                     pos = utils.select_pos(chrom, chrom_length)
-                    DUP = VariantObjects.Duplication(chrom, pos, l, id)
+                    DUP = VariantObjects.Duplication(chrom, pos, l, id, cn)
                 
                 if attempts <= 3:
                     sv_positions[chrom].append((pos, DUP.get_end()))
