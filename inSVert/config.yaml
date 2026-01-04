@@ -1,10 +1,7 @@
-mean_GC_content: 0.41 # adjust based on your genome's mean GC content
-
-
 variants:
 
   DEL:
-    count: 100              
+    count: 1000        
     distribution: "lognormal"
     parameters:
       mean_length: 5000      # Target mean length in bp
@@ -13,12 +10,12 @@ variants:
       max_length: 100000     # Hard cap: nothing larger than 10kb
 
   INS:
-    count: 50
+    count: 500
     distribution: "lognormal" 
     parameters:
       mean_length: 10000
       sigma: 
-      min_length: 100
+      min_length: 60
       max_length: 100000
 
 
@@ -37,7 +34,7 @@ variants:
 
 
   INV:
-    count: 25
+    count: 1000
     distribution: "lognormal"   
     parameters:
       mean_length: 1500

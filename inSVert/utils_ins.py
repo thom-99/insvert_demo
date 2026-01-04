@@ -1,7 +1,6 @@
 '''
 UTILITIES FOR THE INSERT MODULE OF INSVERT
 '''
-import yaml
 import random
 
 '''
@@ -46,27 +45,6 @@ def parse_fasta(fasta_path:str):
         
     return genome
 
-
-'''
-RETRIEVES GLOBAL GC CONTENT FROM THE CONFIG.YAML 
-defaults to 0.41 (Human)
-'''
-
-def get_GC(config_path:str) -> float:
-
-    with open(config_path, 'r') as file:
-        config = yaml.safe_load(file)
-
-    gc = config.get('gc_content')
-
-    if gc is None:
-        print('GC content non specified, defaulting to 0.41 (Human)')
-        gc = 0.41
-    
-    if gc <= 0 or gc >= 1.0:
-        raise ValueError(f"GC content must be between 0.0 and 1.0, got {gc} instead")
-    
-    return gc
 
 '''
 GENERATES A RANDOM DNA SEQUENCE GIVEN A LENGTH AND A GC CONTENT
