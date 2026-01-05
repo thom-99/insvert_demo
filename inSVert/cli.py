@@ -1,5 +1,5 @@
-import simulate
-import insert
+from . import simulate
+from . import insert
 
 import rich_click as click
 from rich.console import Console
@@ -16,7 +16,7 @@ def cli():
     """
     [bold magenta]inSVert[/bold magenta]: Structural Variant Simulation & Insertion Toolkit.
 
-    A tool to [bold cyan]simulate[/bold cyan] SVs into a VCF or [bold green]insert[/bold green] 
+    A tool to [bold green]simulate[/bold green] SVs into a VCF or [bold green]insert[/bold green] 
     existing variants into a FASTA reference genome.    
     """
     pass
@@ -52,19 +52,20 @@ def simulate_cmd(config, reference, output):
 @click.argument("reference", type=click.Path(exists=True, dir_okay=False))
 @click.argument("vcf", type=click.Path(exists=True, dir_okay=False))
 @click.option(
-    "-o", "--output", 
-    default="edited_genome.fasta", 
-    show_default=True, 
-    help="Path for the modified output FASTA."
-)
-@click.option(
     "--gc", 
     type=click.FloatRange(0.0, 1.0), 
     default=0.41, 
     show_default=True,
     help="Target GC content for random sequence generation."
 )
-def insert_cmd(reference, vcf, output, gc):
+@click.option(
+    "-o", "--output", 
+    default="edited_genome.fasta", 
+    show_default=True, 
+    help="Path for the modified output FASTA."
+)
+
+def insert_cmd(reference, vcf, gc, output):
     # 1. Header
     console.print(Panel(f"Inserting Variants from [yellow]{vcf}[/yellow]", title="[bold green]inSVert Insert[/bold green]", border_style="green"))    
 

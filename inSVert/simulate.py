@@ -1,5 +1,5 @@
-import VariantObjects
-import utils_sim
+from . import VariantObjects
+from . import utils_sim
 from collections import defaultdict
 
 

@@ -1,0 +1,2 @@
+[console_scripts]
+inSVert = inSVert.cli:cli

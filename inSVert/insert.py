@@ -1,4 +1,4 @@
-import utils_ins
+from . import utils_ins
 import pysam
 
 '''
