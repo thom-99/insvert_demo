@@ -1,73 +1,65 @@
 # demo specififcations 
 
+inSVert is a toolkit for the simulation of structural variants and for the insertion of structural variants into a reference genome. 
 
-### command-line interface design
+inSVert main utility lies in benchmarking different read mappers and variant callers against a ground thruth set of structural variants. The software is composed by two modules: simulate & insert. 
+
+### inSVert simulate
+The first module simulates a custom set of structural variants such as Deletions, Insertions, Inversion and Duplications according to the user instructions provided in the config.yaml file. The default options models the SV length distribution as a lognormal distribution providing a pattern that more closely resemles real variants (fewer very long variants and many short ones), however there are other distributions to choose from. 
+(to implement) inSVert also aims to be the first structural variantion simulator that is fleible in terms of ploidy, so that It can work also with genomes having a ploidy number of 3 or above, like many plant genomes do. For this reason the user needs to specify the ploidy number and a measure of heterozygousity.    
+
+to simulate structural variants, simply type 
 ```
-inSVert <command> [options]
-
-Commands:
-    simulate    -analyze input VCF and produce a realistic fake
-    insert      -inserts the SVs into the reference genome
-    pipeline    -combines the above in a single process
+inSVert simulate config.yaml reference.fasta -o simulated.vcf
 ```
-
-![alt text](img/updated_workflow.png)
-
-
-## simulate
-
-input: 
-- fasta reference 
-- vcf file 
-or 
-- user defined parameters to generate SVs (--manual option)
-
-output:
-- simulated.vcf 
-
-1. given an input VCF file, it parses it and extract all the relevant data regarding the lengths and eventual copy-numbers of the SVs contained in the VCF. Using the --manual option, it is the user that specifies this information in the command line or in a config.txt file (still have to decide) as well as the parameters of the lognormal.
-2. a lognormal distribution is built using that data, one for each sv-type, using the scipy.stats library.
-3. an X amount of SVs is sampled from that distribution and stored into an accessible data structure.
-4. the fasta.fai index file is read and all the information regarding the chromosomes and their relative lengths is collected
-5. a chromsome is randomly selected (taking into account the relative lengths of each) and a random position is selected along that chromosome
-6. an instance of a StructuralVariant object is built using a length collected in step 3) and the chromosome and position collected at step 5)
-7. all the relevant information is registered into a bed file, which is used to keep track of where all the SVs are. 
-8. the StructuralVariant objects can be formatted into a line of a VCF file, essentially a SV entry and the VCF file is built incrementally. 
+where the first argument is the path to the config.yaml file and the second one the path to your reference genome in fasta format, you can specify in which file you want your simulated SVs after the -o option. 
 
 
 
-## insert
-given an input fasta file, from which the VCF file is based on (this can be checked from the source line of the VCF header), the SV in the VCF are programmatically placed in a copy of the fasta reference. The SVs are placed in sorted order, to avoid indexing conflicts, moreover an index for each chromosome/contig is kept to place correctly the next SVs. 
+### inSVert insert
+given an sorted VCF file, either produced by *inSVert simulate* or provided by the user, the Structural Variants contained in the file will be programmatically inserted into a specified reference genome in fasta format. Although it may seem trivial, this is by far the most complex step as it requires careful tracking of the inserted variants to avoid indexing problems and to avoid placing variants one on top of the other. 
+
+It is a strict requirement that the VCF file is produced from the same reference in which we are trying to insert the variants. 
+This can be easily checked by inspecting the first few lines of the VCF
+simply type 
+```
+head myfile.vcf 
+```
+and check for a correspondance between the reference of the VCF and the one you want to put the variants in. 
+
+to insert Structural Variants from a sorted VCF to a reference genome, simply type 
+```
+inSVert insert reference.fasta simulated.vcf -gc 0.41 -o simulated.fasta
+```
+where the first argument is the path to the reference genome and the second one the path to the VCF chosen by the user. 
+The optional argument -gc allows the user to specify the GC ratio of their reference genome. This is used when building insertions, in order to make DNA sequences more realistic. The default is set to the human genome GC content (0.41). 
+
+
+---
 
 bottlenecks:
 - the whole reference genome has to be loaded into memory, sucking up a huge amount of RAM
 
-------
-------
 
 ### practical considerations
 
-due to limited computing power, the organism of choice will be yeast.
-
-
-
-
-checked validity of the VCF file with vcftools (vcf-validator)
-
- 
+- due to limited computing power, the organism of choice will be yeast.
+- checked validity of the VCF file with vcftools (vcf-validator)
+- checked the effects of inserting SVs by pairing and plotting the un-edited and edited fasta references with Gepard. 
 
 ---
 
 # TO DO
 
 
-
 for the final version:
 
-- try to use as few dependancies as possible
 - allow to simulate based on other distributions (student and normal) 
-
-
+- use interval tree to compute the overlap wich is a more efficient solution O(logN) rather than the current O(N^2) 
+- add a forced sorting step for the VCF, otherwise if the VCF to insert is not sorted the program will break.
+- add Translocations, movements of DNA from one chromosome to another one. (if it does not mess with polyploids) 
+- handle polidy number (hardest task yet)
+- reduce memory usage by implementing some form of lazy-loading (reading chromsomes??)
 
 
 
