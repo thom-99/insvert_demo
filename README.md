@@ -4,6 +4,8 @@ inSVert is a toolkit for the simulation of structural variants and for the inser
 
 inSVert main utility lies in benchmarking different read mappers and variant callers against a ground thruth set of structural variants. The software is composed by two modules: simulate & insert. 
 
+![Alt text](img/benchmarking_workflow.png)
+
 ### inSVert simulate
 The first module simulates a custom set of structural variants such as Deletions, Insertions, Inversion and Duplications according to the user instructions provided in the config.yaml file. The default options models the SV length distribution as a lognormal distribution providing a pattern that more closely resemles real variants (fewer very long variants and many short ones), however there are other distributions to choose from. 
 (to implement) inSVert also aims to be the first structural variantion simulator that is fleible in terms of ploidy, so that It can work also with genomes having a ploidy number of 3 or above, like many plant genomes do. For this reason the user needs to specify the ploidy number and a measure of heterozygousity.    
@@ -36,6 +38,13 @@ The optional argument -gc allows the user to specify the GC ratio of their refer
 
 
 ---
+
+
+
+
+
+
+
 
 bottlenecks:
 - the whole reference genome has to be loaded into memory, sucking up a huge amount of RAM
