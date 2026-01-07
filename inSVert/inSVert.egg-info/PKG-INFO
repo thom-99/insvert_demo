@@ -1,6 +1,0 @@
-Metadata-Version: 2.1
-Name: inSVert
-Version: 0.0.0
-Summary: Structural Variant Simulation & Insertion Toolkit
-Author: Thomas Di Marzo
-Requires-Python: >=3.7

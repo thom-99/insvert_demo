@@ -1,7 +1,0 @@
-pyproject.toml
-inSVert.egg-info/PKG-INFO
-inSVert.egg-info/SOURCES.txt
-inSVert.egg-info/dependency_links.txt
-inSVert.egg-info/entry_points.txt
-inSVert.egg-info/requires.txt
-inSVert.egg-info/top_level.txt

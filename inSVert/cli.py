@@ -1,3 +1,4 @@
+from .tests import input_files_tests
 from . import simulate
 from . import insert
 
@@ -69,15 +70,24 @@ def insert_cmd(reference, vcf, gc, output):
     # 1. Header
     console.print(Panel(f"Inserting Variants from [yellow]{vcf}[/yellow]", title="[bold green]inSVert Insert[/bold green]", border_style="green"))    
 
+    valid_vcf = input_files_tests.prepare_vcf(vcf)
+
     # 2. Execution with Spinner
     with console.status(f"[bold green]Processing Genome (GC={gc})...[/bold green]", spinner="dots"):
             try:
-                insert.run(gc, reference, vcf, output)
+                insert.run(gc, reference, valid_vcf, output)
             except Exception as e:
                 console.print(f"[bold red]Error:[/bold red] {e}")
                 raise click.Abort()
-            
+                
     console.print(f"[bold green]✔ Done![/bold green] Modified genome saved to [underline]{output}[/underline]\n")
+    
+ 
+
+
+
+
+
 
 if __name__ == "__main__":
     cli()

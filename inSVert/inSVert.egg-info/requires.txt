@@ -1,6 +1,0 @@
-pysam
-numpy
-pyyaml
-scipy
-rich-click
-rich

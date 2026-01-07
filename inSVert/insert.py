@@ -11,9 +11,8 @@ def run(gc_content, ref_fasta, vcf_file, output_fasta):
     print('loading the refetrence genome...')
     genome = utils_ins.parse_fasta(ref_fasta)
 
-    print(genome.keys()) #printing chromosomes
-    print()
-
+    #print(genome.keys()) #printing chromosomes
+    
     print('parsing VCF...')
     vcf = pysam.VariantFile(vcf_file)
 

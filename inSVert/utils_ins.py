@@ -46,6 +46,9 @@ def parse_fasta(fasta_path:str):
     return genome
 
 
+
+### FUNCTIONS FOR INSERTING VARIANTS ### 
+
 '''
 GENERATES A RANDOM DNA SEQUENCE GIVEN A LENGTH AND A GC CONTENT
 returns a bytearray

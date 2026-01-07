@@ -13,3 +13,4 @@ inSVert.egg-info/dependency_links.txt
 inSVert.egg-info/entry_points.txt
 inSVert.egg-info/requires.txt
 inSVert.egg-info/top_level.txt
+inSVert/tests/input_files_tests.py
