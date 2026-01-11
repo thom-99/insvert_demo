@@ -19,7 +19,7 @@ where the first argument is the path to the config.yaml file and the second one 
 
 
 ### inSVert insert
-given an sorted VCF file, either produced by *inSVert simulate* or provided by the user, the Structural Variants contained in the file will be programmatically inserted into a specified reference genome in fasta format. Although it may seem trivial, this is by far the most complex step as it requires careful tracking of the inserted variants to avoid indexing problems and to avoid placing variants one on top of the other. 
+given a VCF file , either produced by *inSVert simulate* or provided by the user, the Structural Variants contained in the file will be programmatically inserted into a specified reference genome in fasta format. Although it may seem trivial, this is by far the most complex step as it requires careful tracking of the inserted variants to avoid indexing problems and to avoid placing variants one on top of the other. 
 
 It is a strict requirement that the VCF file is produced from the same reference in which we are trying to insert the variants. 
 This can be easily checked by inspecting the first few lines of the VCF
@@ -69,6 +69,9 @@ for the final version:
 - add Translocations, movements of DNA from one chromosome to another one. (if it does not mess with polyploids) 
 - handle polidy number (hardest task yet)
 - reduce memory usage by implementing some form of lazy-loading (reading chromsomes??)
+
+- containerize in docker image 
+- write a nextflow benchmarking pipeline 
 
 
 

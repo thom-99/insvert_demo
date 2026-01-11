@@ -22,12 +22,11 @@ import pysam
 
 
 # 1. Helper: Sorts VCF using Python RAM (No external tools needed)
-def sort_vcf_pure_python(input_path, output_path):
+def sort_vcf(input_path, output_path):
     """
     Reads all variants, sorts them in memory, and writes a compressed VCF.
-    This replaces 'bcftools sort' and avoids missing library errors.
     """
-    # Open the input
+    
     infile = pysam.VariantFile(input_path)
     header = infile.header
     
@@ -36,7 +35,6 @@ def sort_vcf_pure_python(input_path, output_path):
     contig_map = {contig: i for i, contig in enumerate(header.contigs)}
     
     # Read all variants into a list
-    # (Safe for simulation files with < 500,000 variants)
     try:
         records = list(infile)
     finally:
@@ -65,8 +63,7 @@ def prepare_vcf(vcf_path):
     print(f"Sorting and indexing variants to {sorted_vcf_path}...")
     
     try:
-        # STEP A: Sort using Python (Cannot fail due to missing libs)
-        sort_vcf_pure_python(vcf_path, sorted_vcf_path)
+        sort_vcf(vcf_path, sorted_vcf_path)
         
         # STEP B: Index using Pysam
         pysam.tabix_index(sorted_vcf_path, preset="vcf", force=True)

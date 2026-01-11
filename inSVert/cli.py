@@ -1,6 +1,6 @@
 from .tests import input_files_tests
 from . import simulate
-from . import insert
+from . import insert_streaming
 
 import rich_click as click
 from rich.console import Console
@@ -75,7 +75,7 @@ def insert_cmd(reference, vcf, gc, output):
     # 2. Execution with Spinner
     with console.status(f"[bold green]Processing Genome (GC={gc})...[/bold green]", spinner="dots"):
             try:
-                insert.run(gc, reference, valid_vcf, output)
+                insert_streaming.run(gc, reference, valid_vcf, output)
             except Exception as e:
                 console.print(f"[bold red]Error:[/bold red] {e}")
                 raise click.Abort()
