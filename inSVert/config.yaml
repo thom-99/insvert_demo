@@ -1,16 +1,16 @@
 variants:
 
   DEL:
-    count: 1000        
+    count: 10        
     distribution: "lognormal"
     parameters:
-      mean_length: 5000      # Target mean length in bp
+      mean_length: 500      # Target mean length in bp
       sigma:             # Shape parameter for lognormal
       min_length: 50        # Hard cap: nothing smaller than 50bp
       max_length: 100000     # Hard cap: nothing larger than 10kb
 
   INS:
-    count: 500
+    count: 1000
     distribution: "lognormal" 
     parameters:
       mean_length: 10000
@@ -20,7 +20,7 @@ variants:
 
 
   DUP:                                # tandem duplications
-    count: 40               
+    count: 10               
     distribution: "lognormal"
     parameters:
       mean_length: 2000

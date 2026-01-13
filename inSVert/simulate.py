@@ -1,6 +1,7 @@
 from . import VariantObjects
 from . import utils_sim
 from collections import defaultdict
+import bisect
 
 
 def run(config_path, fasta_path, output_file):
@@ -75,7 +76,7 @@ def run(config_path, fasta_path, output_file):
                         DEL = VariantObjects.Deletion(chrom, pos, l, id)
 
                     if attempts <= 3:
-                        sv_positions[chrom].append((pos, DEL.get_end()))
+                        bisect.insort(sv_positions[chrom], (pos, DEL.get_end()))
                         vcf.write(DEL.format() + '\n')
 
             if svtype == 'INV':
@@ -101,7 +102,7 @@ def run(config_path, fasta_path, output_file):
                         INV = VariantObjects.Inversion(chrom, pos, l, id)
 
                     if attempts <= 3:
-                        sv_positions[chrom].append((pos, INV.get_end()))                
+                        bisect.insort(sv_positions[chrom], (pos, INV.get_end()))               
                         vcf.write(INV.format() + '\n')
 
             if svtype == 'DUP':
@@ -127,7 +128,7 @@ def run(config_path, fasta_path, output_file):
                         DUP = VariantObjects.Duplication(chrom, pos, l, id, cn)
                     
                     if attempts <= 3:
-                        sv_positions[chrom].append((pos, DUP.get_end()))
+                        bisect.insort(sv_positions[chrom], (pos, DUP.get_end()))
                         vcf.write(DUP.format() + '\n')
 
 

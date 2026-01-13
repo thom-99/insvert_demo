@@ -9,7 +9,7 @@ class BufferWriter:
         self.buffer = ""
 
     def write(self, data):
-        self.buffer += data
+        self.buffer += data.upper()
         while len(self.buffer) >= self.width:
             self.fh.write(self.buffer[:self.width] + '\n')
             self.buffer = self.buffer[self.width:]
@@ -44,8 +44,8 @@ def run(gc_content, ref_fasta, vcf_file, output_fasta):
                 start = var.pos - 1
                 
                 # Check Overlap
-                if start < ref_pos:
-                    continue 
+                #if start < ref_pos:
+                #    continue 
 
                 # 1. Write Reference up to this SV
                 if start > ref_pos:

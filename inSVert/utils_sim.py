@@ -7,6 +7,7 @@ import sys
 import yaml
 import numpy as np
 import datetime
+import bisect
 from scipy import stats
 
 
@@ -209,12 +210,46 @@ def buildheader(chroms, lengths, reference_path=None):
 
 
 '''
-FUNCTION TO CHECK WETHER A SV OVERLAPS WITH ANOTHER PRE-EXISTING ONE
+FUNCTION TO CHECK WETHER A SV OVERLAPS WITH ANOTHER PRE-EXISTING ONE O(NxL) -- suboptimal solution
 the pre-existing SVs are stored in a dictionary {chrom : [(pos, end)]}
 '''
-def overlaps(chrom, start, end, sv_positions:dict):
+def overlaps_suboptimal(chrom, start, end, sv_positions:dict):
     for existing_start, existing_end in sv_positions[chrom]:
         # the intervals do not overlap if the new interval ends before an existing one starts or if starts before the existing one ends
         if not (end < existing_start or start > existing_end):
             return True # it overlaps
+    return False
+
+
+
+"""
+Checks for overlaps using Binary Search. O(log N).
+Requires sv_positions[chrom] to be sorted by start position.
+"""
+def overlaps(chrom, start, end, sv_positions: dict):
+    
+    intervals = sv_positions[chrom]
+    
+    if not intervals: # base case, empty list == no overlaps 
+        return False
+
+    # 1) Binary Search to find the "Insertion Point" 
+    # We ask: "If I were to insert this new variant into the list while keeping it sorted, at which index would it go?"
+    idx = bisect.bisect_right(intervals, (start, end))
+
+    # 4. Check the Left Neighbor == the variant immediately BEFORE the new one
+    if idx > 0:
+        prev_start, prev_end = intervals[idx - 1]
+        # If the previous variant's END extends past our START, there's overlap.
+        if prev_end > start:
+            return True
+
+    # 5. Check the Right Neighbor ==tThe variant immediately AFTER the new one
+    if idx < len(intervals):
+        next_start, next_end = intervals[idx]
+        # If the next variant's START begins before our END, we overlap.
+        if next_start < end:
+            return True
+
+    # otherwise there's no overlap
     return False
