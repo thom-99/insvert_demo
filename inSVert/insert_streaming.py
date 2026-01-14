@@ -44,8 +44,8 @@ def run(gc_content, ref_fasta, vcf_file, output_fasta):
                 start = var.pos - 1
                 
                 # Check Overlap
-                #if start < ref_pos:
-                #    continue 
+                if start < ref_pos:
+                    continue 
 
                 # 1. Write Reference up to this SV
                 if start > ref_pos:

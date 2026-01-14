@@ -43,13 +43,6 @@ The optional argument -gc allows the user to specify the GC ratio of their refer
 
 
 
-
-
-
-bottlenecks:
-- the whole reference genome has to be loaded into memory, sucking up a huge amount of RAM
-
-
 ### practical considerations
 
 - due to limited computing power, the organism of choice will be yeast.
@@ -63,12 +56,10 @@ bottlenecks:
 
 for the final version:
 
+
 - allow to simulate based on other distributions (student and normal) 
-- use interval tree to compute the overlap wich is a more efficient solution O(logN) rather than the current O(N^2) 
-- add a forced sorting step for the VCF, otherwise if the VCF to insert is not sorted the program will break.
 - add Translocations, movements of DNA from one chromosome to another one. (if it does not mess with polyploids) 
 - handle polidy number (hardest task yet)
-- reduce memory usage by implementing some form of lazy-loading (reading chromsomes??)
 
 - containerize in docker image 
 - write a nextflow benchmarking pipeline 
