@@ -8,6 +8,7 @@ import yaml
 import numpy as np
 import datetime
 import bisect
+import random
 from scipy import stats
 
 
@@ -28,6 +29,11 @@ def parse_config(config_path):
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
     
+    #extracting ploidy and heterozygosity values
+    genome_settings = config.get('genome')
+    ploidy = genome_settings.get('ploidy',2)
+    heterozygosity = genome_settings.get('heterozygosity',0.5) 
+
     sv_data = {}
     
     # Iterate through the variants defined in YAML
@@ -91,7 +97,10 @@ def parse_config(config_path):
             
             sv_data[sv_type]['copy_numbers'] = copy_numbers
     
-    return sv_data
+    return {'variants' : sv_data,
+            'ploidy' : ploidy,
+            'heterozygosity' : heterozygosity
+            }
 
 #print(parse_config('inSVert/config.yaml'))
 
@@ -253,3 +262,26 @@ def overlaps(chrom, start, end, sv_positions: dict):
 
     # otherwise there's no overlap
     return False
+
+
+
+
+
+
+'''
+Generates a genotype string (e.g., '0/1/0') based on ploidy and heterozygosity.
+Ensures that at least one allele is '1'
+'''
+def generate_genotype(ploidy:int, heterozygosity:float) -> str:
+
+    #randomly assign alleles based on heterozygosity prob
+    alleles = [1 if random.random() < heterozygosity else 0 for copy in range(ploidy)]
+
+    #if all alleles are 0, we force at least one to be a 1
+    if sum(alleles) == 0:
+        random_idx = random.randint(0,ploidy-1)
+        alleles[random_idx] = 1
+    
+    #format the output as a VCF genotype string (ex. "0/1")
+    return "/".join(map(str,alleles))
+

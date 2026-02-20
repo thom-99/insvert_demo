@@ -6,11 +6,12 @@ Structural Variant Objects used to build a VCF file
 
 class StructuralVariant(ABC):
     
-    def __init__(self, chrom:str, pos:int, length:int, id:str):
+    def __init__(self, chrom:str, pos:int, length:int, id:str, genotype:str):
         self.chrom = chrom
         self.pos = pos
         self.length = length
         self.id = id 
+        self.genotype = genotype
         self.ref = "N"
         self.qual = "."
         self.filter = "PASS"
@@ -34,14 +35,14 @@ class StructuralVariant(ABC):
         #formats information into a VCF line
         alt = self.get_alt()
         info = self.get_info()
-        return f"{self.chrom}\t{self.pos}\t{self.id}\t{self.ref}\t{alt}\t{self.qual}\t{self.filter}\t{info}\tGT\t1/1"
+        return f"{self.chrom}\t{self.pos}\t{self.id}\t{self.ref}\t{alt}\t{self.qual}\t{self.filter}\t{info}\tGT\t{self.genotype}"
         
 
 class Insertion(StructuralVariant):
 #implement also sequence as an optional argument to pass tk get_alt
 
-    def __init__(self, chrom, pos, length, id):
-        super().__init__(chrom, pos, length, id)
+    def __init__(self, chrom, pos, length, id, genotype):
+        super().__init__(chrom, pos, length, id, genotype)
 
     def get_alt(self):
         return "<INS>" #for now, I'll keep the symbolic alt
@@ -57,10 +58,10 @@ class Insertion(StructuralVariant):
 
 class Deletion(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id):
+    def __init__(self, chrom, pos, length, id, genotype):
         if length>= 0:
             raise ValueError(f"Deletion length must be negative, got {length} instead")
-        super().__init__(chrom, pos, length, id)
+        super().__init__(chrom, pos, length, id, genotype)
 
     def get_alt(self):
         return "<DEL>"
@@ -76,8 +77,8 @@ class Deletion(StructuralVariant):
 
 class Inversion(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id):
-        super().__init__(chrom, pos, length, id)
+    def __init__(self, chrom, pos, length, id, genotype):
+        super().__init__(chrom, pos, length, id, genotype)
 
     def get_alt(self):
         return "<INV>"
@@ -94,8 +95,8 @@ class Inversion(StructuralVariant):
 
 class Duplication(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id, copy_number:int):
-        super().__init__(chrom, pos, length, id)
+    def __init__(self, chrom, pos, length, id, genotype, copy_number:int):
+        super().__init__(chrom, pos, length, id, genotype)
         self.copy_number = copy_number
 
     def get_alt(self):

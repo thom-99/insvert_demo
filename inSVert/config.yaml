@@ -1,3 +1,7 @@
+genome:
+  ploidy: 3
+  heterozygosity: 0.5 # Probability that any given copy carries the variant
+
 variants:
 
   DEL:

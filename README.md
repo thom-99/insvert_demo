@@ -60,6 +60,20 @@ for the final version:
 - allow to simulate based on other distributions (student and normal) 
 - add Translocations, movements of DNA from one chromosome to another one. (if it does not mess with polyploids) 
 - handle polidy number (hardest task yet)
+specifically:
+- config changes to .yaml file to include ploidy and heterozygousity
+- Update parse_config to return the new global ploidy and heterozygosity values alongside the variant data.
+- Create a function to generate a genotype string (e.g., 0/1/0). It should randomly assign 1 to alleles based on the heterozygosity parameter, ensuring at least one allele is 1 so the record remains a valid variant.
+- In the run function, generate this GT string for every SV and pass it to the VariantObjects constructor.
+- Update StructuralVariant.__init__ to accept and store a genotype string
+- Modify the format() method to replace the hardcoded 1/1 with the instance's self.genotype attribute
+- loop restructuring in insert_streaming.py : wrap the entire chromsome processing loop inside a new loop (for h_idx in range(ploidy))
+- Update the FASTA header writer to use the Sample#H{index}#Chrom format (e.g., Sample#H1#chr1) to ensure the output is pangenome-compatible and easy to distinguish. Add an optional setting to be able to replace the default 'Sample' with the organism name. 
+- Inside the variant loop, use pysam to access the GT field for the current record
+- Allele Check: Only execute the apply_insertion/deletion/etc. logic if the genotype bit at the current h_idx is 1. If it is 0, skip the variant and treat that region as reference for that specific haplotype pass.
+- Update the run function to either accept a ploidy argument or automatically determine it by inspecting the first record of the VCF file. Implement a test that if it finds a genotype with more copies than plody, it gives an error. 
+CLI Updates (cli.py):Update the simulate command to pass the new config parameters to the simulation engine.Update the insert command to handle the increased output file size (which will be original reference size $\times$ ploidy).
+
 
 - containerize in docker image 
 - write a nextflow benchmarking pipeline 
