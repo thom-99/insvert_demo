@@ -19,7 +19,7 @@ class BufferWriter:
             self.fh.write(self.buffer + '\n')
             self.buffer = ""
 
-def run(gc_content, ref_fasta, vcf_file, output_fasta):
+def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
     
     print(f'Streaming variants from {vcf_file}...')
     ref = pysam.FastaFile(ref_fasta)
@@ -28,63 +28,69 @@ def run(gc_content, ref_fasta, vcf_file, output_fasta):
     with open(output_fasta, 'w') as out_f:
         writer = BufferWriter(out_f)
         
-        for chrom in ref.references:
-            print(f"Processing {chrom}...", end="\r")
-            out_f.write(f">{chrom}\n")
-            
-            try:
-                chrom_variants = list(vcf.fetch(chrom))
-            except ValueError:
-                chrom_variants = []
-
-            ref_pos = 0 
-            chrom_len = ref.get_reference_length(chrom)
-            
-            for var in chrom_variants:
-                start = var.pos - 1
+        for haplotype in range(ploidy):
+            for chrom in ref.references:
+                print(f"Processing {chrom} (Haplotype {haplotype+1})...", end="\r")
+                out_f.write(f">Sample#H{haplotype }#{chrom}\n")
                 
-                # Check Overlap
-                if start < ref_pos:
-                    continue 
+                try:
+                    chrom_variants = list(vcf.fetch(chrom))
+                except ValueError:
+                    chrom_variants = []
 
-                # 1. Write Reference up to this SV
-                if start > ref_pos:
-                    chunk = ref.fetch(chrom, ref_pos, start)
+                ref_pos = 0 
+                chrom_len = ref.get_reference_length(chrom)
+                
+                for var in chrom_variants:
+
+                    # only apply ig the allele at the haplotype is 1 
+                    if var.samples[0]['GT'][haplotype] != 1:
+                        continue 
+
+                    start = var.pos - 1 #VCF is 1-indexed, python is 0-indexed
+                    
+                    # Check Overlap
+                    if start < ref_pos:
+                        continue 
+
+                    # 1. Write Reference up to this SV
+                    if start > ref_pos:
+                        chunk = ref.fetch(chrom, ref_pos, start)
+                        writer.write(chunk)
+                        ref_pos = start
+                    
+                    # 2. Dispatch to utils_ins based on Type
+                    svtype = var.info.get("SVTYPE")
+                    svlen = var.info.get("SVLEN")
+                    if isinstance(svlen, tuple): svlen = svlen[0]
+                    if svlen is None: svlen = var.stop - var.start
+                    length = abs(svlen)
+
+                    if svtype == 'INS':
+                        ins_seq = utils_ins_streaming.generate_seq(length, gc_content)
+                        utils_ins_streaming.apply_insertion(writer, ins_seq)
+                        # ref_pos stays same
+                        
+                    elif svtype == 'DEL':
+                        ref_pos = utils_ins_streaming.apply_deletion(ref_pos, length)
+                        
+                    elif svtype == 'INV':
+                        ref_pos = utils_ins_streaming.apply_inversion(ref, chrom, start, length, writer)
+                        
+                    elif svtype == 'DUP':
+                        # Extract CN logic here or inside utils? 
+                        # Keeping extraction here is cleaner for the utility function signature
+                        sample_name = list(var.samples.keys())[0] if var.samples else None
+                        cn = var.samples[sample_name]['CN'] if sample_name else 2
+                        
+                        ref_pos = utils_ins_streaming.apply_duplication(ref, chrom, start, length, cn, writer)
+
+                # 3. Finish Chromosome
+                if ref_pos < chrom_len:
+                    chunk = ref.fetch(chrom, ref_pos, chrom_len)
                     writer.write(chunk)
-                    ref_pos = start
                 
-                # 2. Dispatch to utils_ins based on Type
-                svtype = var.info.get("SVTYPE")
-                svlen = var.info.get("SVLEN")
-                if isinstance(svlen, tuple): svlen = svlen[0]
-                if svlen is None: svlen = var.stop - var.start
-                length = abs(svlen)
-
-                if svtype == 'INS':
-                    ins_seq = utils_ins_streaming.generate_seq(length, gc_content)
-                    utils_ins_streaming.apply_insertion(writer, ins_seq)
-                    # ref_pos stays same
-                    
-                elif svtype == 'DEL':
-                    ref_pos = utils_ins_streaming.apply_deletion(ref_pos, length)
-                    
-                elif svtype == 'INV':
-                    ref_pos = utils_ins_streaming.apply_inversion(ref, chrom, start, length, writer)
-                    
-                elif svtype == 'DUP':
-                    # Extract CN logic here or inside utils? 
-                    # Keeping extraction here is cleaner for the utility function signature
-                    sample_name = list(var.samples.keys())[0] if var.samples else None
-                    cn = var.samples[sample_name]['CN'] if sample_name else 2
-                    
-                    ref_pos = utils_ins_streaming.apply_duplication(ref, chrom, start, length, cn, writer)
-
-            # 3. Finish Chromosome
-            if ref_pos < chrom_len:
-                chunk = ref.fetch(chrom, ref_pos, chrom_len)
-                writer.write(chunk)
-            
-            writer.flush()
+                writer.flush()
             
     vcf.close()
     ref.close()

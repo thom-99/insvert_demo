@@ -75,6 +75,12 @@ def simulate_cmd(config, reference, output):
 @click.argument("reference", type=click.Path(exists=True, dir_okay=False))
 @click.argument("vcf", type=click.Path(exists=True, dir_okay=False))
 @click.option(
+    "--ploidy", 
+    type=int, 
+    required=True, 
+    help="Ploidy of the simulated organism (number of haplotype copies to generate)."
+)
+@click.option(
     "--gc", 
     type=click.FloatRange(0.0, 1.0), 
     default=0.41, 
@@ -88,7 +94,7 @@ def simulate_cmd(config, reference, output):
     help="Path for the modified output FASTA."
 )
 
-def insert_cmd(reference, vcf, gc, output):
+def insert_cmd(reference, vcf, ploidy, gc, output):
     """
     Insert structural variants from a VCF file into a reference genome.
     
@@ -102,9 +108,11 @@ def insert_cmd(reference, vcf, gc, output):
     
     VCF        - VCF file containing structural variants to insert
     
+    --ploidy   - the number of haplotype copies you want to produce
+
     [bold]Example:[/bold]
     
-      $ inSVert insert hg38.fasta variants.vcf --gc 0.45 -o modified_genome.fasta
+      $ inSVert insert hg38.fasta variants.vcf --ploidy 2 --gc 0.45 -o modified_genome.fasta
     """
     # 1. Header
     console.print(Panel(f"Inserting Variants from [yellow]{vcf}[/yellow]", title="[bold green]inSVert Insert[/bold green]", border_style="green"))    
@@ -114,7 +122,7 @@ def insert_cmd(reference, vcf, gc, output):
     # 2. Execution with Spinner
     with console.status(f"[bold green]Processing Genome (GC={gc})...[/bold green]", spinner="dots"):
             try:
-                insert_streaming.run(gc, reference, valid_vcf, output)
+                insert_streaming.run(gc, reference, valid_vcf, ploidy, output)
             except Exception as e:
                 console.print(f"[bold red]Error:[/bold red] {e}")
                 raise click.Abort()

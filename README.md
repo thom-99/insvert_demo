@@ -61,9 +61,6 @@ for the final version:
 - add Translocations, movements of DNA from one chromosome to another one. (if it does not mess with polyploids) 
 - handle polidy number (hardest task yet)
 specifically:
-- config changes to .yaml file to include ploidy and heterozygousity
-- Update parse_config to return the new global ploidy and heterozygosity values alongside the variant data.
-- Create a function to generate a genotype string (e.g., 0/1/0). It should randomly assign 1 to alleles based on the heterozygosity parameter, ensuring at least one allele is 1 so the record remains a valid variant.
 - In the run function, generate this GT string for every SV and pass it to the VariantObjects constructor.
 - Update StructuralVariant.__init__ to accept and store a genotype string
 - Modify the format() method to replace the hardcoded 1/1 with the instance's self.genotype attribute
