@@ -15,7 +15,9 @@ def run(config_path, fasta_path, output_file):
     print(f"Reading index from: {fasta_path}")
     chroms, lengths = utils_sim.read_fai(fasta_path)
 
-    sv_positions = defaultdict(list) # {chrom : [(pos, end),(pos2, end2)]}
+    # {chrom: {haplotype_index: [(pos, end)]}}
+    # the lambda is a necessity because deafultdict requires a function... it's a bit convoluted
+    sv_positions = defaultdict(lambda: defaultdict(list)) 
 
 
     with open(output_file, 'w') as vcf:
@@ -44,7 +46,7 @@ def run(config_path, fasta_path, output_file):
                     # if either the SV is placed out of chromsome bounds or overlapping with another SV
                     # then another chromsome and position are chosen for the SV
                     attempts = 0
-                    while INS.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, INS.get_end(), sv_positions):
+                    while INS.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, INS.get_end(), gt, sv_positions):
                         attempts += 1
                         if attempts > 3:
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
@@ -55,7 +57,12 @@ def run(config_path, fasta_path, output_file):
                     
                     # log SV and format a VCF line
                     if attempts <= 3:
-                        sv_positions[chrom].append((pos, INS.get_end()))
+
+                        # Split genotype and insert into the correct haplotype lists
+                        alleles = gt.split('/')
+                        for hap_idx, allele in enumerate(alleles):
+                            if allele == "1":
+                                bisect.insort(sv_positions[chrom][hap_idx], (pos, INS.get_end()))
                         vcf.write(INS.format() + '\n')
         
             if svtype == 'DEL':
@@ -72,7 +79,7 @@ def run(config_path, fasta_path, output_file):
                     DEL = VariantObjects.Deletion(chrom, pos, l, id, gt)
 
                     attempts = 0
-                    while DEL.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, DEL.get_end(), sv_positions):
+                    while DEL.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, DEL.get_end(), gt, sv_positions):
                         attempts += 1
                         if attempts > 3:
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
@@ -82,7 +89,10 @@ def run(config_path, fasta_path, output_file):
                         DEL = VariantObjects.Deletion(chrom, pos, l, id, gt)
 
                     if attempts <= 3:
-                        bisect.insort(sv_positions[chrom], (pos, DEL.get_end()))
+                        alleles = gt.split('/')
+                        for hap_idx, allele in enumerate(alleles):
+                            if allele == "1":
+                                bisect.insort(sv_positions[chrom][hap_idx], (pos, DEL.get_end()))
                         vcf.write(DEL.format() + '\n')
 
             if svtype == 'INV':
@@ -99,7 +109,7 @@ def run(config_path, fasta_path, output_file):
 
                     # loop to produce valid pos to allow END to be within chromsome bounds
                     attempts = 0
-                    while INV.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, INV.get_end(), sv_positions):
+                    while INV.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, INV.get_end(), gt, sv_positions):
                         attempts += 1
                         if attempts > 3:
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
@@ -109,7 +119,10 @@ def run(config_path, fasta_path, output_file):
                         INV = VariantObjects.Inversion(chrom, pos, l, id, gt)
 
                     if attempts <= 3:
-                        bisect.insort(sv_positions[chrom], (pos, INV.get_end()))               
+                        alleles = gt.split('/')
+                        for hap_idx, allele in enumerate(alleles):
+                            if allele == "1":
+                                bisect.insort(sv_positions[chrom][hap_idx], (pos, INV.get_end()))
                         vcf.write(INV.format() + '\n')
 
             if svtype == 'DUP':
@@ -126,7 +139,7 @@ def run(config_path, fasta_path, output_file):
 
                     # loop to produce valid pos to allow END to be within chromsome bounds
                     attempts = 0
-                    while DUP.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, DUP.get_end(), sv_positions):
+                    while DUP.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, DUP.get_end(), gt, sv_positions):
                         attempts += 1
                         if attempts > 3:
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
@@ -136,7 +149,10 @@ def run(config_path, fasta_path, output_file):
                         DUP = VariantObjects.Duplication(chrom, pos, l, id, gt, cn)
                     
                     if attempts <= 3:
-                        bisect.insort(sv_positions[chrom], (pos, DUP.get_end()))
+                        alleles = gt.split('/')
+                        for hap_idx, allele in enumerate(alleles):
+                            if allele == "1":
+                                bisect.insort(sv_positions[chrom][hap_idx], (pos, DUP.get_end()))
                         vcf.write(DUP.format() + '\n')
 
 

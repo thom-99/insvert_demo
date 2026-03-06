@@ -234,31 +234,37 @@ def overlaps_suboptimal(chrom, start, end, sv_positions:dict):
 """
 Checks for overlaps using Binary Search. O(log N).
 Requires sv_positions[chrom] to be sorted by start position.
+Now haplotype-aware: only checks the haplotypes where the variant is placed.
 """
-def overlaps(chrom, start, end, sv_positions: dict):
-    
-    intervals = sv_positions[chrom]
-    
-    if not intervals: # base case, empty list == no overlaps 
-        return False
+def overlaps(chrom, start, end, genotype_str, sv_positions: dict):
 
-    # 1) Binary Search to find the "Insertion Point" 
-    # We ask: "If I were to insert this new variant into the list while keeping it sorted, at which index would it go?"
-    idx = bisect.bisect_right(intervals, (start, end))
+    alleles = genotype_str.split('/')
 
-    # 4. Check the Left Neighbor == the variant immediately BEFORE the new one
-    if idx > 0:
-        prev_start, prev_end = intervals[idx - 1]
-        # If the previous variant's END extends past our START, there's overlap.
-        if prev_end > start:
-            return True
+    for hap_idx, allele in enumerate(alleles):
+        if allele == "1": #check only haplotypes that carry the variant
 
-    # 5. Check the Right Neighbor ==tThe variant immediately AFTER the new one
-    if idx < len(intervals):
-        next_start, next_end = intervals[idx]
-        # If the next variant's START begins before our END, we overlap.
-        if next_start < end:
-            return True
+            intervals = sv_positions[chrom][hap_idx]
+        
+            if not intervals: # base case, empty list == no overlaps 
+                return False
+
+            # 1) Binary Search to find the "Insertion Point" 
+            # We ask: "If I were to insert this new variant into the list while keeping it sorted, at which index would it go?"
+            idx = bisect.bisect_right(intervals, (start, end))
+
+            # 4. Check the Left Neighbor == the variant immediately BEFORE the new one
+            if idx > 0:
+                prev_start, prev_end = intervals[idx - 1]
+                # If the previous variant's END extends past our START, there's overlap.
+                if prev_end > start:
+                    return True
+
+            # 5. Check the Right Neighbor ==tThe variant immediately AFTER the new one
+            if idx < len(intervals):
+                next_start, next_end = intervals[idx]
+                # If the next variant's START begins before our END, we overlap.
+                if next_start < end:
+                    return True
 
     # otherwise there's no overlap
     return False

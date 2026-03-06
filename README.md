@@ -60,6 +60,7 @@ for the final version:
 - allow to simulate based on other distributions (student and normal) 
 - add Translocations, movements of DNA from one chromosome to another one. (if it does not mess with polyploids) 
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name 
+- add seeds for reproducibility
 
 - containerize in docker image 
 - write a nextflow benchmarking pipeline 
