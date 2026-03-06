@@ -61,7 +61,10 @@ for the final version:
 - add Translocations, movements of DNA from one chromosome to another one. (if it does not mess with polyploids) 
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name 
 - add seeds for reproducibility
+- To maintain a lightweight VCF and independent modules , keep using symbolic <INS> tags , but add an option to the insert command to dynamically generate and save the actual insertion sequences into a separate auxiliary FASTA file for accurate benchmarking.
 
+optional (based on performance on larger genomes)
+- Replace the current in-memory sorting  with a pure-Python external merge sort that splits the VCF into small, locally sorted temporary files and streams them back together to prevent memory crashes on large genomes without relying on outside tools
 - containerize in docker image 
 - write a nextflow benchmarking pipeline 
 
