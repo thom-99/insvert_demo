@@ -31,7 +31,7 @@ and check for a correspondance between the reference of the VCF and the one you 
 
 to insert Structural Variants from a sorted VCF to a reference genome, simply type 
 ```
-inSVert insert reference.fasta simulated.vcf -gc 0.41 -o simulated.fasta
+inSVert insert reference.fasta simulated.vcf --ploidy 2 --gc 0.41 -o simulated.fasta
 ```
 where the first argument is the path to the reference genome and the second one the path to the VCF chosen by the user. 
 The optional argument -gc allows the user to specify the GC ratio of their reference genome. This is used when building insertions, in order to make DNA sequences more realistic. The default is set to the human genome GC content (0.41). 
