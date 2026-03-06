@@ -113,7 +113,7 @@ class Duplication(StructuralVariant):
         #overrides the format method of the parent class : adds details of DUPs 
         alt = self.get_alt()
         info = self.get_info()
-        return f"{self.chrom}\t{self.pos}\t{self.id}\t{self.ref}\t{alt}\t{self.qual}\t{self.filter}\t{info}\tGT:CN\t1/1:{self.copy_number}"
+        return f"{self.chrom}\t{self.pos}\t{self.id}\t{self.ref}\t{alt}\t{self.qual}\t{self.filter}\t{info}\tGT:CN\t{self.genotype}:{self.copy_number}"
     
 
 """
