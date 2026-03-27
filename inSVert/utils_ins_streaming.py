@@ -84,63 +84,34 @@ def apply_duplication(ref_file, chrom: str, start: int, length: int, copy_number
 
 
 
-
 def prefetch_translocations(vcf_path, ref_path):
     """
-    Scans the VCF for translocation SOURCE records and fetches 
-    their sequences into a cache dictionary.
-    
-    Args:
-        vcf_path (str): Path to the simulated VCF file.
-        ref_path (str): Path to the reference FASTA file.
-        
-    Returns:
-        dict: tra_cache {event_id: sequence_string}
+    Scans the VCF for translocation SOURCE records using pysam.
+    pysam automatically handles .vcf and .vcf.gz formats.
     """
-    # Temporary storage to find the start and end of each SOURCE event
-    # {event_id: [chrom, [pos1, pos2]]}
     source_coords = defaultdict(lambda: [None, []])
     tra_cache = {}
 
-    # 1. Parse the VCF to find SOURCE coordinates
-    with open(vcf_path, 'r') as vcf:
-        for line in vcf:
-            if line.startswith('#'):
-                continue
-                
-            fields = line.strip().split('\t')
-            info = fields[7]
-            
-            # Only process BND types with a SOURCE role
-            if "SVTYPE=BND" in info and "TRA_ROLE=SOURCE" in info:
-                # Extract EVENT ID
-                # Example: EVENT=inSVert.TRA.41
-                event_id = None
-                for tag in info.split(';'):
-                    if tag.startswith("EVENT="):
-                        event_id = tag.split('=')[1]
-                        break
-                
-                if event_id:
-                    chrom = fields[0]
-                    pos = int(fields[1])
-                    
-                    source_coords[event_id][0] = chrom
-                    source_coords[event_id][1].append(pos)
+    # 1. Parse the VCF using pysam (Compression-agnostic)
+    vcf = pysam.VariantFile(vcf_path)
+    for var in vcf:
+        # Check INFO tags using the pysam info proxy
+        if var.info.get("SVTYPE") == "BND" and var.info.get("TRA_ROLE") == "SOURCE":
+            event_id = var.info.get("EVENT")
+            if event_id:
+                # Store coordinates (var.pos is 1-based)
+                source_coords[event_id][0] = var.chrom
+                source_coords[event_id][1].append(var.pos)
+    vcf.close()
 
     # 2. Fetch sequences from the reference FASTA
-    # We use pysam.FastaFile for efficient random access
     ref = pysam.FastaFile(ref_path)
-    
     for event_id, (chrom, positions) in source_coords.items():
         if len(positions) == 2:
-            # Sort positions to ensure we fetch from start to end
             start = min(positions)
             end = max(positions)
-            
-            # Fetch the sequence. 
-            # Note: pos in VCF is 1-based, pysam fetch is 0-based
-            # We fetch from start-1 to end-1 to capture the segment between the BNDs
+            # pysam fetch is 0-based, so subtract 1 from VCF coordinates
+            # We fetch the segment between the two source breakends
             sequence = ref.fetch(chrom, start - 1, end - 1)
             tra_cache[event_id] = sequence
             
@@ -148,4 +119,3 @@ def prefetch_translocations(vcf_path, ref_path):
     return tra_cache
 
 
-#print(prefetch_translocations('data/test_translocations.vcf','data/cerevisiae_test.fa'))
