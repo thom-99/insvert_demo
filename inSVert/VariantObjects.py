@@ -116,14 +116,47 @@ class Duplication(StructuralVariant):
         return f"{self.chrom}\t{self.pos}\t{self.id}\t{self.ref}\t{alt}\t{self.qual}\t{self.filter}\t{info}\tGT:CN\t{self.genotype}:{self.copy_number}"
     
 
-"""
-# test
-ins1 = Insertion('ch1', 1000, 55, 'inSVert.INS.1')
-print(ins1.format())
-del1 = Deletion('chX',90, 800, 'inSVert.DEL.1')
-print(del1.format())
-inv1 = Inversion('chY',1000, 88, 'inSVert.INv.1')
-print(inv1.format())
-dup1 = Duplication('chr1', 10000, 5000, 'inSVert.DUP.1', copy_number=4)
-print(dup1.format())
-"""
+
+class Breakend(StructuralVariant):
+    """
+    Represents a single BND record in VCF 4.2.
+    A full translocation is composed of 4 Breakend objects.
+    """
+    def __init__(self, chrom, pos, id, genotype, mate_id, event_id, alt_string, role):
+        # Length is typically 0 or 1 for BNDs as they represent a single point junction
+        super().__init__(chrom, pos, 0, id, genotype)
+        self.mate_id = mate_id
+        self.event_id = event_id
+        self.alt_string = alt_string # The bracketed ALT string (e.g., N[chr2:5000[)
+        self.role = role             # SOURCE or DESTINATION
+
+    def get_alt(self):
+        """Returns the specific bracketed ALT string for this breakend."""
+        return self.alt_string
+
+    def get_end(self):
+        """For BNDs, the END is the same as the POS."""
+        return self.pos
+
+    def get_info(self):
+        """
+        Returns the INFO field including BND-specific tags.
+        """
+        # We include MATEID to link to the partner BND and EVENT to group all 4.
+        # TRA_ROLE helps the simulation engine know if it's cutting or pasting.
+        return (f"SVTYPE=BND;MATEID={self.mate_id};"
+                f"EVENT={self.event_id};TRA_ROLE={self.role}")
+
+    def format(self):
+        """Overrides format to ensure SVLEN is not typically included for BNDs."""
+        alt = self.get_alt()
+        info = self.get_info()
+        return (f"{self.chrom}\t{self.pos}\t{self.id}\t{self.ref}\t{alt}\t"
+                f"{self.qual}\t{self.filter}\t{info}\tGT\t{self.genotype}")
+
+
+
+'''
+bnd1 = Breakend('chr1', 10, 'inSVert.BND.1.1', '0/1', 'inSVert.BND.1.3', 'TRA1', 'N[chr1:10[' ,'SOURCE')
+print(bnd1.format())
+'''
