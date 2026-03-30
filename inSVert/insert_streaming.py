@@ -36,7 +36,11 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
 
             for chrom in ref.references:
                 print(f"Processing {chrom} (Haplotype {haplotype+1})...", end="\r")
-                out_f.write(f">Sample#H{haplotype+1}#{chrom}\n")
+
+                if ploidy==1:
+                    out_f.write(f">{chrom}\n")
+                else:
+                    out_f.write(f">Sample#H{haplotype+1}#{chrom}\n")
                 
                 try:
                     chrom_variants = list(vcf.fetch(chrom))
