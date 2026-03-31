@@ -58,7 +58,9 @@ for the final version:
 
 
 - allow to simulate based on other distributions (student and normal) 
-- add Translocations, movements of DNA from one chromosome to another one. (if it does not mess with polyploids) 
+- add Translocations, movements of DNA from one chromosome to another one. (if it does not mess with polyploids). This is especially valuable since simulators like VarSim cannot simulate them.hints on how to do it:
+- since the insertion module processes one chromsome at a time and a traslocation involves moving a sequence from chrA to chrB, translocations need a pre-fetch step before initiating the loop in the insert module. In this step I iterate through all the translocations in the VCF and use pysam.FastaFile.fetch() to get all the source sequences and store them in a small (and it has to be small, otherwise it will suck up too much memory) dictionary. {id : sequence_string}. Then a TRANSLOCATION need to be treated as a DEL (on the source chr) and a INS (on the destination chr).  
+ 
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name 
 - add global random seeding for reproducibility
 - To maintain a lightweight VCF and independent modules , keep using symbolic <INS> tags , but add an option to the insert command to dynamically generate and save the actual insertion sequences into a separate auxiliary FASTA file for accurate benchmarking.
@@ -67,6 +69,25 @@ optional (based on performance on larger genomes)
 - Replace the current in-memory sorting  with a pure-Python external merge sort that splits the VCF into small, locally sorted temporary files and streams them back together to prevent memory crashes on large genomes without relying on outside tools
 - containerize in docker image 
 - write a nextflow benchmarking pipeline 
+- when writing the pipeline, perform multiple simulations with different seeds to be able to build a precision-recall curve
+
+on TRASLOCATIONS:
+according to the specifications of the VCF 4.2 I could represent a translocations using breakends in this fashion:
+
+```#CHROM,POS,ID,REF,ALT,INFO
+chr1,1,BND_A,N,N[chrX:1000[,SVTYPE=BND;MATEID=BND_B;EVENT=TRA001
+chr1,300,BND_C,N,N[chrX:1300[,SVTYPE=BND;MATEID=BND_D;EVENT=TRA001
+chrX,1000,BND_B,N,N[chr1:1[,SVTYPE=BND;MATEID=BND_A;EVENT=TRA001
+chrX,1300,BND_D,N,N[chr1:300[,SVTYPE=BND;MATEID=BND_C;EVENT=TRA001
+```
+
+this allows for the sorting logic of the VCF file to stay unchanged but it complicates slightly the main insert module: 
+- I have to process 4 lines instead of one
+- the first two lines I have to tread as a deletion in this case 
+- the other two lines I have to treat as a insertion
+
+
+
 
 
 

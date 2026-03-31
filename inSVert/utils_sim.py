@@ -203,11 +203,16 @@ def buildheader(chroms, lengths, reference_path=None):
     header_lines.append('##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant">')
     header_lines.append('##INFO=<ID=END,Number=1,Type=Integer,Description="End position of structural variant">')
 
+    header_lines.append('##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakends">')
+    header_lines.append('##INFO=<ID=EVENT,Number=1,Type=String,Description="ID of event associated with breakend">')
+    header_lines.append('##INFO=<ID=TRA_ROLE,Number=1,Type=String,Description="Role in translocation: SOURCE or SINK">')
+
     # ALT fields
     header_lines.append('##ALT=<ID=DEL,Description="Deletion">')
     header_lines.append('##ALT=<ID=INS,Description="Insertion">')
     header_lines.append('##ALT=<ID=DUP,Description="Duplication">')
     header_lines.append('##ALT=<ID=INV,Description="Inversion">')
+    header_lines.append('##ALT=<ID=BND,Description="Breakend">')
 
     # FORMAT fields
     header_lines.append('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">')
@@ -259,7 +264,7 @@ def overlaps(chrom, start, end, genotype_str, sv_positions: dict):
                 if prev_end > start:
                     return True
 
-            # 5. Check the Right Neighbor ==tThe variant immediately AFTER the new one
+            # 5. Check the Right Neighbor == the variant immediately AFTER the new one
             if idx < len(intervals):
                 next_start, next_end = intervals[idx]
                 # If the next variant's START begins before our END, we overlap.

@@ -3,6 +3,8 @@ UTILITIES FOR THE INSERT MODULE OF INSVERT
 (Streaming Version)
 '''
 import random
+import pysam
+from collections import defaultdict
 
 def generate_seq(length:int, gc_content:float) -> str:
     """Generates a random DNA sequence as a string."""
@@ -76,3 +78,43 @@ def apply_duplication(ref_file, chrom: str, start: int, length: int, copy_number
     # 4. Advance reference pointer past the original unit 
     # (because we just wrote it as part of full_seq)
     return start + length
+
+
+
+
+
+
+def prefetch_translocations(vcf_path, ref_path):
+    """
+    Scans the VCF for translocation SOURCE records using pysam.
+    pysam automatically handles .vcf and .vcf.gz formats.
+    """
+    source_coords = defaultdict(lambda: [None, []])
+    tra_cache = {}
+
+    # 1. Parse the VCF using pysam (Compression-agnostic)
+    vcf = pysam.VariantFile(vcf_path)
+    for var in vcf:
+        # Check INFO tags using the pysam info proxy
+        if var.info.get("SVTYPE") == "BND" and var.info.get("TRA_ROLE") == "SOURCE":
+            event_id = var.info.get("EVENT")
+            if event_id:
+                # Store coordinates (var.pos is 1-based)
+                source_coords[event_id][0] = var.chrom
+                source_coords[event_id][1].append(var.pos)
+    vcf.close()
+
+    # 2. Fetch sequences from the reference FASTA
+    ref = pysam.FastaFile(ref_path)
+    for event_id, (chrom, positions) in source_coords.items():
+        if len(positions) == 2:
+            start = min(positions)
+            end = max(positions)
+            # pysam fetch is 0-based, so subtract 1 from VCF coordinates
+            # We fetch the segment between the two source breakends
+            sequence = ref.fetch(chrom, start - 1, end)
+            tra_cache[event_id] = sequence
+            
+    ref.close()
+    return tra_cache
+

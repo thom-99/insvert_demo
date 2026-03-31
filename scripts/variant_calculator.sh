@@ -23,9 +23,11 @@ INS_COUNT=$(grep -v "^#" "$VCF_FILE" | grep -c "INS")
 DEL_COUNT=$(grep -v "^#" "$VCF_FILE" | grep -c "DEL")
 DUP_COUNT=$(grep -v "^#" "$VCF_FILE" | grep -c "DUP")
 INV_COUNT=$(grep -v "^#" "$VCF_FILE" | grep -c "INV")
+BND_COUNT=$(grep -v "^#" "$VCF_FILE" | grep -c "BND")
 
 # Display results
 echo "INS: $INS_COUNT"
 echo "DEL: $DEL_COUNT"
 echo "DUP: $DUP_COUNT"
 echo "INV: $INV_COUNT"
+echo "BND: $BND_COUNT"

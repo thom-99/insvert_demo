@@ -156,6 +156,67 @@ def run(config_path, fasta_path, output_file):
                         vcf.write(DUP.format() + '\n')
 
 
+            # translocations are made up by 4 BND Objects 
+            if svtype == "TRA":
+                for l in fakedict['TRA']['lengths']:
+
+                    # collecting the arguments to create the objects 
+                    chrom_src, len_src = utils_sim.select_chr(chroms, lengths)
+                    pos_src = utils_sim.select_pos(chrom_src, len_src)
+
+                    chrom_dst, len_dst = utils_sim.select_chr(chroms, lengths)
+                    pos_dst = utils_sim.select_pos(chrom_dst, len_dst)
+
+                    event_id = f'inSVert.{svtype}.{count}'
+                    gt = utils_sim.generate_genotype(ploidy, heterozygosity)
+                    count += 1
+
+                    # overlap checks 
+                    attempts = 0 
+                    while (pos_src + l > len_src or 
+                           pos_dst + 1 > len_dst or 
+                           utils_sim.overlaps(chrom_src, pos_src, pos_src + l, gt, sv_positions) or
+                           utils_sim.overlaps(chrom_dst, pos_dst, pos_dst + 1, gt, sv_positions)):
+                        
+                        attempts += 1
+                        if attempts > 10:
+                            print(f'{svtype} n: {count} could not be placed after 10 attempts, skipping')
+                            break
+                        print(f'{svtype} exceeds boundaries or overlaps, fetching new positions')
+                        # re-selecting both source and destination
+                        chrom_src, len_src = utils_sim.select_chr(chroms, lengths)
+                        pos_src = utils_sim.select_pos(chrom_src, len_src)
+                        chrom_dst, len_dst = utils_sim.select_chr(chroms, lengths)
+                        pos_dst = utils_sim.select_pos(chrom_dst, len_dst)
+
+                    if attempts <= 10:
+                        # instantiate 4 BND IDs
+                        id_a1, id_a2 = f"{event_id}.A1", f"{event_id}.A2"
+                        id_b1, id_b2 = f"{event_id}.B1", f"{event_id}.B2"
+                        # create 4 BNDs with braketed ALT strings
+                        # SOURCE 
+                        bnd_a1 = VariantObjects.Breakend(chrom_src, pos_src, id_a1, gt, id_b1, event_id, f"N[{chrom_dst}:{pos_dst}[", "SOURCE")
+                        bnd_a2 = VariantObjects.Breakend(chrom_src, pos_src + l, id_a2, gt, id_b2, event_id, f"]{chrom_dst}:{pos_dst+1}]N", "SOURCE")
+                        # DESTINATION
+                        bnd_b1 = VariantObjects.Breakend(chrom_dst, pos_dst, id_b1, gt, id_a1, event_id, f"N[{chrom_src}:{pos_src}[", "SINK")
+                        bnd_b2 = VariantObjects.Breakend(chrom_dst, pos_dst + 1, id_b2, gt, id_a2, event_id, f"]{chrom_src}:{pos_src+l}]N", "SINK")
+
+
+                        # update overlap tracker with both positions
+                        alleles = gt.split('/')
+                        for hap_idx, allele in enumerate(alleles):
+                            if allele == "1":
+                                # Track the source as a deleted interval
+                                bisect.insort(sv_positions[chrom_src][hap_idx], (pos_src, pos_src + l))
+                                # Track the destination as a point insertion
+                                bisect.insort(sv_positions[chrom_dst][hap_idx], (pos_dst, pos_dst + 1))
+                        
+                        vcf.write(bnd_a1.format() + '\n')
+                        vcf.write(bnd_a2.format() + '\n')
+                        vcf.write(bnd_b1.format() + '\n')
+                        vcf.write(bnd_b2.format() + '\n')
+
+
     print(f"VCF simulated. Output written to {output_file}")
 
 

@@ -1,20 +1,20 @@
 genome:
-  ploidy: 3
+  ploidy: 1
   heterozygosity: 0.5 # Probability that any given copy carries the variant
 
 variants:
 
   DEL:
-    count: 10        
+    count: 100        
     distribution: "lognormal"
     parameters:
-      mean_length: 500      # Target mean length in bp
+      mean_length: 5000      # Target mean length in bp
       sigma:             # Shape parameter for lognormal
       min_length: 50        # Hard cap: nothing smaller than 50bp
       max_length: 100000     # Hard cap: nothing larger than 10kb
 
   INS:
-    count: 1000
+    count: 100
     distribution: "lognormal" 
     parameters:
       mean_length: 10000
@@ -24,7 +24,7 @@ variants:
 
 
   DUP:                                # tandem duplications
-    count: 10               
+    count: 100               
     distribution: "lognormal"
     parameters:
       mean_length: 2000
@@ -38,10 +38,20 @@ variants:
 
 
   INV:
-    count: 1000
+    count: 100
     distribution: "lognormal"   
     parameters:
-      mean_length: 1500
-      sigma: 
-      min_length: 50
+      mean_length: 50000
+      sigma: 1000
+      min_length: 1000
+      max_length: 100000
+
+
+  TRA:
+    count: 100
+    distribution: "lognormal"   
+    parameters:
+      mean_length: 50000
+      sigma: 1000
+      min_length: 1000
       max_length: 100000
