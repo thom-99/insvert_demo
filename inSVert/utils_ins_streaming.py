@@ -112,10 +112,9 @@ def prefetch_translocations(vcf_path, ref_path):
             end = max(positions)
             # pysam fetch is 0-based, so subtract 1 from VCF coordinates
             # We fetch the segment between the two source breakends
-            sequence = ref.fetch(chrom, start - 1, end - 1)
+            sequence = ref.fetch(chrom, start - 1, end)
             tra_cache[event_id] = sequence
             
     ref.close()
     return tra_cache
-
 
