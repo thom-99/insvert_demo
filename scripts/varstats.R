@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript
+#this script was entirely generated with AI 
 
 # Load required libraries (auto-install if missing)
 suppressPackageStartupMessages({
