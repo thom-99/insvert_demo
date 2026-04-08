@@ -7,8 +7,8 @@ inSVert main utility lies in benchmarking different read mappers and variant cal
 ![Alt text](img/benchmarking_workflow.png)
 
 ### inSVert simulate
-The first module simulates a custom set of structural variants such as Deletions, Insertions, Inversion and Duplications according to the user instructions provided in the config.yaml file. The default options models the SV length distribution as a lognormal distribution providing a pattern that more closely resemles real variants (fewer very long variants and many short ones), however there are other distributions to choose from. 
-(to implement) inSVert also aims to be the first structural variantion simulator that is fleible in terms of ploidy, so that It can work also with genomes having a ploidy number of 3 or above, like many plant genomes do. For this reason the user needs to specify the ploidy number and a measure of heterozygousity.    
+The first module simulates a custom set of structural variants such as Deletions, Insertions, Inversions, Tandem Duplications and Traslocations according to the user instructions provided in the config.yaml file. The user can choose to simulate variants according to a pareto distribution, which more closely reflects the natural distribution of variants (with fewer long variants and more short variants), or a normal distribution.  
+inSVert also takes into account polyploid organisms: the user uses the 'ploidy' and 'heterozygousity' parameters to instruct the simulate module about how many genome copies he intends to simulate the variants on (most likely this corresponds to the ploidy number of the organism of interest) and how likely it is to find a variant on a given copy, thus manipulating the probability of variants of being heterozygus (present only on one copy) or homozygous (present on multiple copies). 
 
 to simulate structural variants, simply type 
 ```
@@ -21,34 +21,23 @@ where the first argument is the path to the config.yaml file and the second one 
 ### inSVert insert
 given a VCF file , either produced by *inSVert simulate* or provided by the user, the Structural Variants contained in the file will be programmatically inserted into a specified reference genome in fasta format. Although it may seem trivial, this is by far the most complex step as it requires careful tracking of the inserted variants to avoid indexing problems and to avoid placing variants one on top of the other. 
 
-It is a strict requirement that the VCF file is produced from the same reference in which we are trying to insert the variants. 
-This can be easily checked by inspecting the first few lines of the VCF
+For this reason it is a strict requirement that the VCF file is produced from the same reference in which we are trying to insert the variants and that the VCF file is sorted. Therefore, inSVert will take care of sorting the VCF file if it is not sorted already. 
+
+As far as the reference consistency: it can be easily checked by inspecting the first few lines of the VCF
 simply type 
 ```
 head myfile.vcf 
 ```
-and check for a correspondance between the reference of the VCF and the one you want to put the variants in. 
+and check for a correspondance between the reference of the VCF and the one you want to put the variants in. [to implement] Using a different reference invalidates the whole simulation, therefore inSVert will generate an error if it finds that you are trying to use a reference with a different name from the one from which the VCF has originated. 
 
 to insert Structural Variants from a sorted VCF to a reference genome, simply type 
 ```
 inSVert insert reference.fasta simulated.vcf --ploidy 2 --gc 0.41 -o simulated.fasta
 ```
 where the first argument is the path to the reference genome and the second one the path to the VCF chosen by the user. 
-The optional argument -gc allows the user to specify the GC ratio of their reference genome. This is used when building insertions, in order to make DNA sequences more realistic. The default is set to the human genome GC content (0.41). 
+The optional argument --gc allows the user to specify the GC ratio used when generating insertion sequences, in order to make DNA sequences more realistic. The default is set to the human genome GC content (0.41). 
 
 
----
-
-
-
-
-
-### practical considerations
-
-- due to limited computing power, the organism of choice will be yeast.
-- checked validity of the VCF file with vcftools (vcf-validator)
-- checked the effects of inserting SVs by pairing and plotting the un-edited and edited fasta references with Gepard. 
-- checked presence of variants with Ribbon and Splithreader 
 ---
 
 # TO DO
@@ -57,16 +46,18 @@ The optional argument -gc allows the user to specify the GC ratio of their refer
 for the final version:
 
 
-- allow to simulate based on other distributions (student and normal) 
-- add Translocations, movements of DNA from one chromosome to another one. (if it does not mess with polyploids). This is especially valuable since simulators like VarSim cannot simulate them.hints on how to do it:
-- since the insertion module processes one chromsome at a time and a traslocation involves moving a sequence from chrA to chrB, translocations need a pre-fetch step before initiating the loop in the insert module. In this step I iterate through all the translocations in the VCF and use pysam.FastaFile.fetch() to get all the source sequences and store them in a small (and it has to be small, otherwise it will suck up too much memory) dictionary. {id : sequence_string}. Then a TRANSLOCATION need to be treated as a DEL (on the source chr) and a INS (on the destination chr).  
- 
+- implement reciprocal traslocations
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name 
 - add global random seeding for reproducibility
+- add a progress bar in the insert.py module for a better UX
+- add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end)
 - To maintain a lightweight VCF and independent modules , keep using symbolic <INS> tags , but add an option to the insert command to dynamically generate and save the actual insertion sequences into a separate auxiliary FASTA file for accurate benchmarking.
 
-optional (based on performance on larger genomes)
+
+
+super optional (based on performance on larger genomes)
 - Replace the current in-memory sorting  with a pure-Python external merge sort that splits the VCF into small, locally sorted temporary files and streams them back together to prevent memory crashes on large genomes without relying on outside tools
+
 - containerize in docker image 
 - write a nextflow benchmarking pipeline 
 - when writing the pipeline, perform multiple simulations with different seeds to be able to build a precision-recall curve
