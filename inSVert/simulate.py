@@ -2,9 +2,15 @@ from . import VariantObjects
 from . import utils_sim
 from collections import defaultdict
 import bisect
+import numpy as np
 
 
-def run(config_path, fasta_path, output_file):
+def run(config_path, fasta_path, output_file, seed=None):
+
+    # setting up the seed for reproducibility
+    if seed is not None:
+        print(f"Setting global random seed to: {seed}")
+        np.random.seed(seed)
 
     print(f"Parsing config: {config_path}")
     config_info = utils_sim.parse_config(config_path)

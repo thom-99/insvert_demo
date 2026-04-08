@@ -5,7 +5,6 @@ from . import insert_streaming
 import rich_click as click
 from rich.console import Console
 from rich.panel import Panel
-from rich.text import Text
 click.rich_click.USE_RICH_MARKUP = True
 
 # intializing Rich Console 
@@ -37,7 +36,13 @@ def cli():
     show_default=True,
     help="Path where the output VCF will be saved."
 )
-def simulate_cmd(config, reference, output):
+@click.option(
+    "--seed",
+    type=int,
+    default=None,
+    help="Global random seed for reproducible simulations"
+)
+def simulate_cmd(config, reference, output, seed):
     """
     Generate simulated structural variants based on a configuration file.
     
@@ -53,7 +58,7 @@ def simulate_cmd(config, reference, output):
     
     [bold]Example:[/bold]
     
-      $ inSVert simulate my_config.yaml hg38.fasta -o my_variants.vcf
+      $ inSVert simulate my_config.yaml hg38.fasta --seed 123 -o my_variants.vcf
     """
 
     # 1. Header
@@ -62,7 +67,7 @@ def simulate_cmd(config, reference, output):
     # 2. Execution with Spinner
     with console.status("[bold cyan]Generating Structural Variants...[/bold cyan]", spinner="dots"):
         try:
-            simulate.run(config, reference, output)
+            simulate.run(config, reference, output, seed)
         except Exception as e:
             console.print(f"[bold red]Error:[/bold red] {e}")
             raise click.Abort()

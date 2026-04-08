@@ -16,8 +16,6 @@ def cleanup_indexed_vcf(filepath):
         os.remove(filepath)
     if filepath and os.path.exists(filepath + ".tbi"):
         os.remove(filepath + ".tbi")
-import os
-import pysam
 
 
 

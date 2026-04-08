@@ -8,12 +8,7 @@ import yaml
 import numpy as np
 import datetime
 import bisect
-import random
-from scipy import stats
 
-
-import yaml
-import numpy as np
 
 
 def calculate_pareto_alpha(median_bp, min_bp):
@@ -298,11 +293,11 @@ Ensures that at least one allele is '1'
 def generate_genotype(ploidy:int, heterozygosity:float) -> str:
 
     #randomly assign alleles based on heterozygosity prob
-    alleles = [1 if random.random() < heterozygosity else 0 for copy in range(ploidy)]
+    alleles = [1 if np.random.random() < heterozygosity else 0 for copy in range(ploidy)]
 
     #if all alleles are 0, we force at least one to be a 1
     if sum(alleles) == 0:
-        random_idx = random.randint(0,ploidy-1)
+        random_idx = np.random.randint(0,ploidy)
         alleles[random_idx] = 1
     
     #format the output as a VCF genotype string (ex. "0/1")

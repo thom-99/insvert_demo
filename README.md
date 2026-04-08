@@ -1,7 +1,8 @@
-# demo specififcations 
 <p align="center">
   <img src="img/small_logo.png" alt="inSVert Logo" width="300">
 </p>
+
+# inSVert 
 inSVert is a toolkit for the simulation of structural variants and for the insertion of structural variants into a reference genome. 
 
 inSVert main utility lies in benchmarking different read mappers and variant callers against a ground thruth set of structural variants. The software is composed by two modules: simulate & insert. 
@@ -48,7 +49,7 @@ The optional argument --gc allows the user to specify the GC ratio used when gen
 for the final version:
 
 
-- implement reciprocal traslocations
+- implement reciprocal traslocations aka recombination
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name 
 - add global random seeding for reproducibility
 - add a progress bar in the insert.py module for a better UX
