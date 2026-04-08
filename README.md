@@ -48,7 +48,7 @@ The optional argument -gc allows the user to specify the GC ratio of their refer
 - due to limited computing power, the organism of choice will be yeast.
 - checked validity of the VCF file with vcftools (vcf-validator)
 - checked the effects of inserting SVs by pairing and plotting the un-edited and edited fasta references with Gepard. 
-
+- checked presence of variants with Ribbon and Splithreader 
 ---
 
 # TO DO
@@ -71,20 +71,6 @@ optional (based on performance on larger genomes)
 - write a nextflow benchmarking pipeline 
 - when writing the pipeline, perform multiple simulations with different seeds to be able to build a precision-recall curve
 
-on TRASLOCATIONS:
-according to the specifications of the VCF 4.2 I could represent a translocations using breakends in this fashion:
-
-```#CHROM,POS,ID,REF,ALT,INFO
-chr1,1,BND_A,N,N[chrX:1000[,SVTYPE=BND;MATEID=BND_B;EVENT=TRA001
-chr1,300,BND_C,N,N[chrX:1300[,SVTYPE=BND;MATEID=BND_D;EVENT=TRA001
-chrX,1000,BND_B,N,N[chr1:1[,SVTYPE=BND;MATEID=BND_A;EVENT=TRA001
-chrX,1300,BND_D,N,N[chr1:300[,SVTYPE=BND;MATEID=BND_C;EVENT=TRA001
-```
-
-this allows for the sorting logic of the VCF file to stay unchanged but it complicates slightly the main insert module: 
-- I have to process 4 lines instead of one
-- the first two lines I have to tread as a deletion in this case 
-- the other two lines I have to treat as a insertion
 
 
 

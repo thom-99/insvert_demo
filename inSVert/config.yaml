@@ -5,29 +5,29 @@ genome:
 variants:
 
   DEL:
-    count: 100        
-    distribution: "lognormal"
+    count: 1000        
+    distribution: "pareto"
     parameters:
-      mean_length: 5000      # Target mean length in bp
-      sigma:             # Shape parameter for lognormal
-      min_length: 50        # Hard cap: nothing smaller than 50bp
-      max_length: 100000     # Hard cap: nothing larger than 10kb
+      median_length: 5000      # Target median length in bp
+      sigma:             # standard deviation for the normal distribution
+      min_length: 50        # minimum length of the variant
+      max_length: 100000     # maximum length of the variant
 
   INS:
-    count: 100
-    distribution: "lognormal" 
+    count: 1000
+    distribution: "normal" 
     parameters:
-      mean_length: 10000
+      median_length: 10000
       sigma: 
-      min_length: 60
+      min_length: 50
       max_length: 100000
 
 
   DUP:                                # tandem duplications
-    count: 100               
-    distribution: "lognormal"
+    count: 1000               
+    distribution: "normal"
     parameters:
-      mean_length: 2000
+      median_length: 2000
       sigma: 200
       min_length: 50
       max_length: 5000
@@ -38,10 +38,10 @@ variants:
 
 
   INV:
-    count: 100
-    distribution: "lognormal"   
+    count: 1000
+    distribution: "pareto"   
     parameters:
-      mean_length: 50000
+      median_length: 50000
       sigma: 1000
       min_length: 1000
       max_length: 100000
@@ -49,9 +49,9 @@ variants:
 
   TRA:
     count: 100
-    distribution: "lognormal"   
+    distribution: "pareto"   
     parameters:
-      mean_length: 50000
+      median_length: 50000
       sigma: 1000
       min_length: 1000
       max_length: 100000

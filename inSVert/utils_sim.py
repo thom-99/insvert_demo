@@ -15,15 +15,19 @@ from scipy import stats
 import yaml
 import numpy as np
 
-def calculate_lognormal_params(mean_bp, sigma_bp):
+
+def calculate_pareto_alpha(median_bp, min_bp):
     """
-    Helper: Converts arithmetic mean and standard deviation (in bp) 
-    to lognormal underlying parameters (mu and sigma).
+    compute the alpha (shape) parameter for a Pareto distribution
+    given a desired median and a minimum length
+    reference formula: Median = min * 2^(1/alpha)
     """
-    variance = sigma_bp ** 2
-    sigma = np.sqrt(np.log(variance / (mean_bp ** 2) + 1))
-    mu = np.log(mean_bp) - (sigma ** 2 / 2)
-    return mu, sigma
+    if median_bp <= min_bp:
+        raise ValueError("median must be greater than min_length for a valid Pareto distribution")
+    
+    alpha = np.log(2) / np.log(median_bp/min_bp)
+    return alpha
+    
 
 def parse_config(config_path):
     with open(config_path, 'r') as file:
@@ -45,25 +49,33 @@ def parse_config(config_path):
         lengths = []
         
         # GENERATE LENGTHS
-        if dist_type == "lognormal":
-            
-            user_mean = params['mean_length']
-            user_sigma = params.get('sigma')
-            if user_sigma is None:
-                user_sigma = user_mean*0.5
-            
-            mu, sigma = calculate_lognormal_params(user_mean, user_sigma)
-            
+        if dist_type == "pareto":
+            median_length = params['median_length']
+            min_length = params['min_length']
+            alpha = calculate_pareto_alpha(median_length, min_length)
+
             lengths = []
             while len(lengths) < count:
-                
-                # sample 1 obs
-                sample = np.random.lognormal(mu, sigma)
+                # np.random.pareto(alpha) generates a type II pareto, so I adjust
+                sample = (np.random.pareto(alpha) + 1) * min_length
                 val = int(sample)
-    
-                # check if between min and max length
                 if params['min_length'] <= val <= params['max_length']:
                     lengths.append(val)
+        
+        elif dist_type == "normal":
+            mu = params["median_length"]
+            sigma = params.get('sigma')
+            if sigma is None:
+                sigma = mu * 0.1 #default to 10% of the median
+
+            lengths = []
+            while len(lengths) < count:
+                sample = np.random.normal(mu, sigma)
+                val = int(sample)
+                if params['min_length'] <= val <= params['max_length']:
+                    lengths.append(val)
+
+           
 
             
         sv_data[sv_type] = {'lengths': lengths}
