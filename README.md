@@ -48,13 +48,11 @@ The optional argument --gc allows the user to specify the GC ratio used when gen
 
 for the final version:
 
-
-- implement reciprocal traslocations aka recombination
-- add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name 
-- add global random seeding for reproducibility
-- add a progress bar in the insert.py module for a better UX
-- add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end)
-- To maintain a lightweight VCF and independent modules , keep using symbolic <INS> tags , but add an option to the insert command to dynamically generate and save the actual insertion sequences into a separate auxiliary FASTA file for accurate benchmarking.
+- try to get rid of numpy in favour of built in python modules: random and math xx
+- implement reciprocal traslocations aka recombination xxx
+- add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name x
+- add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
+- To maintain a lightweight VCF and independent modules , keep using symbolic <INS> tags , but add an option to the insert command to dynamically generate and save the actual insertion sequences into a separate auxiliary FASTA file for accurate benchmarking. xx
 
 
 
