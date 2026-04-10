@@ -212,7 +212,6 @@ def buildheader(chroms, lengths, reference_path=None):
 
     header_lines.append('##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakends">')
     header_lines.append('##INFO=<ID=EVENT,Number=1,Type=String,Description="ID of event associated with breakend">')
-    header_lines.append('##INFO=<ID=TRA_ROLE,Number=1,Type=String,Description="Role in translocation: SOURCE or SINK">')
 
     # ALT fields
     header_lines.append('##ALT=<ID=DEL,Description="Deletion">')
@@ -303,3 +302,28 @@ def generate_genotype(ploidy:int, heterozygosity:float) -> str:
     #format the output as a VCF genotype string (ex. "0/1")
     return "/".join(map(str,alleles))
 
+
+
+
+
+def make_bnd_alt(ref_base, mate_chrom, mate_pos, join_side, mate_strand='+'):
+    """
+    Constructs a VCF 4.2 compliant bracketed ALT string.
+    
+    Arguments:
+    ref_base: The base in the REF column (e.g., 'N', 'A').
+    mate_chrom: The chromosome of the mate breakend.
+    mate_pos: The 1-based position of the mate breakend.
+    join_side: 'after' if the new sequence is joined to the right of ref_base (t[p[),
+               'before' if joined to the left (]p]t).
+    mate_strand: '+' if the piece extending from the mate is forward,
+                 '-' if it is the reverse complement.
+    """
+    p = f"{mate_chrom}:{mate_pos}"
+    
+    if join_side == 'after':
+        # Case: t[p[ (forward) or t]p] (reverse comp)
+        return f"{ref_base}[{p}[" if mate_strand == '+' else f"{ref_base}]{p}]"
+    else: 
+        # Case: ]p]t (forward) or [p[t (reverse comp)
+        return f"]{p}]{ref_base}" if mate_strand == '+' else f"[{p}[{ref_base}"

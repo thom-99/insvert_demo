@@ -10,8 +10,7 @@ authors = [{name = "Thomas Di Marzo"}]
 dependencies = [
     "pysam>=0.22.0",
     "numpy",
-    "pyyaml",
-    "scipy",
+    "pyyaml",,
     "rich-click",
     "rich"
 ]

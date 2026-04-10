@@ -38,7 +38,7 @@ def run(config_path, fasta_path, output_file, seed=None):
         print("Building SVs...")
         for svtype in fakedict:
             if svtype == 'INS':
-                for l in fakedict['INS']['lengths']:
+                for l in fakedict[svtype]['lengths']:
 
                     # collect arguments of the SV orbject
                     chrom, chrom_length = utils_sim.select_chr(chroms, lengths)
@@ -72,7 +72,7 @@ def run(config_path, fasta_path, output_file, seed=None):
                         vcf.write(INS.format() + '\n')
         
             if svtype == 'DEL':
-                for l in fakedict['DEL']['lengths']:   
+                for l in fakedict[svtype]['lengths']:   
 
                     # collect arguments of the SV object 
                     chrom, chrom_length = utils_sim.select_chr(chroms, lengths)
@@ -102,7 +102,7 @@ def run(config_path, fasta_path, output_file, seed=None):
                         vcf.write(DEL.format() + '\n')
 
             if svtype == 'INV':
-                for l in fakedict['INV']['lengths']:  
+                for l in fakedict[svtype]['lengths']:  
 
                     # collect arguments of the SV object  
                     chrom, chrom_length = utils_sim.select_chr(chroms, lengths)
@@ -132,7 +132,7 @@ def run(config_path, fasta_path, output_file, seed=None):
                         vcf.write(INV.format() + '\n')
 
             if svtype == 'DUP':
-                for l,cn in zip(fakedict['DUP']['lengths'], fakedict['DUP']['copy_numbers']):   
+                for l,cn in zip(fakedict[svtype]['lengths'], fakedict[svtype]['copy_numbers']):   
 
                     # collect arguments for SV object 
                     chrom, chrom_length = utils_sim.select_chr(chroms, lengths)
@@ -163,8 +163,8 @@ def run(config_path, fasta_path, output_file, seed=None):
 
 
             # translocations are made up by 4 BND Objects 
-            if svtype == "TRA":
-                for l in fakedict['TRA']['lengths']:
+            if svtype == "TRA_CUT":
+                for l in fakedict[svtype]['lengths']:
 
                     # collecting the arguments to create the objects 
                     chrom_src, len_src = utils_sim.select_chr(chroms, lengths)
@@ -197,15 +197,23 @@ def run(config_path, fasta_path, output_file, seed=None):
 
                     if attempts <= 10:
                         # instantiate 4 BND IDs
-                        id_a1, id_a2 = f"{event_id}.A1", f"{event_id}.A2"
-                        id_b1, id_b2 = f"{event_id}.B1", f"{event_id}.B2"
-                        # create 4 BNDs with braketed ALT strings
-                        # SOURCE 
-                        bnd_a1 = VariantObjects.Breakend(chrom_src, pos_src, id_a1, gt, id_b1, event_id, f"N[{chrom_dst}:{pos_dst}[", "SOURCE")
-                        bnd_a2 = VariantObjects.Breakend(chrom_src, pos_src + l, id_a2, gt, id_b2, event_id, f"]{chrom_dst}:{pos_dst+1}]N", "SOURCE")
-                        # DESTINATION
-                        bnd_b1 = VariantObjects.Breakend(chrom_dst, pos_dst, id_b1, gt, id_a1, event_id, f"N[{chrom_src}:{pos_src}[", "SINK")
-                        bnd_b2 = VariantObjects.Breakend(chrom_dst, pos_dst + 1, id_b2, gt, id_a2, event_id, f"]{chrom_src}:{pos_src+l}]N", "SINK")
+                        id_p1, id_p2 = f"{event_id}.P1", f"{event_id}.P2"
+                        id_p3, id_p4 = f"{event_id}.P3", f"{event_id}.P4"
+                        id_h1, id_h2 = f"{event_id}.H1", f"{event_id}.H2"
+
+                        # create 6 BNDs with braketed ALT strings
+                        # adjacency 1 : PASTE START
+                        # joins destination falnk to the beginning of the moved segment
+                        bnd_p1 = VariantObjects.Breakend(chrom_dst, pos_dst, id_p1, gt, id_p2, event_id, f"N[{chrom_src}:{pos_src + 1}[")
+                        bnd_p2 = VariantObjects.Breakend(chrom_src, pos_src + 1, id_p2, gt, id_p1, event_id, f"]{chrom_dst}:{pos_dst}]N")
+                        # adjacency 2 : PASTE END
+                        # joins the end of the moved segment to the destination right flank
+                        bnd_p3 = VariantObjects.Breakend(chrom_src, pos_src + l, id_p3, gt, id_p4, event_id, f"N[{chrom_dst}:{pos_dst + 1}[")
+                        bnd_p4 = VariantObjects.Breakend(chrom_dst, pos_dst + 1, id_p4, gt, id_p3, event_id, f"]{chrom_src}:{pos_src+l}]N")
+                        # adjacency 3 : HEAL THE SOURCE
+                        # joins flank before segment to flank after segment, healing the rupture
+                        bnd_h1 = VariantObjects.Breakend(chrom_src, pos_src, id_h1, gt, id_h2, event_id, f"N[{chrom_src}:{pos_src + l + 1}[")
+                        bnd_h2 = VariantObjects.Breakend(chrom_src, pos_src + l + 1, id_h2, gt, id_h1, event_id, f"]{chrom_src}:{pos_src}]N")                        
 
 
                         # update overlap tracker with both positions
@@ -217,10 +225,12 @@ def run(config_path, fasta_path, output_file, seed=None):
                                 # Track the destination as a point insertion
                                 bisect.insort(sv_positions[chrom_dst][hap_idx], (pos_dst, pos_dst + 1))
                         
-                        vcf.write(bnd_a1.format() + '\n')
-                        vcf.write(bnd_a2.format() + '\n')
-                        vcf.write(bnd_b1.format() + '\n')
-                        vcf.write(bnd_b2.format() + '\n')
+                        vcf.write(bnd_p1.format() + '\n')
+                        vcf.write(bnd_p2.format() + '\n')
+                        vcf.write(bnd_p3.format() + '\n')
+                        vcf.write(bnd_p4.format() + '\n')
+                        vcf.write(bnd_h1.format() + '\n')
+                        vcf.write(bnd_h2.format() + '\n')
 
 
     print(f"VCF simulated. Output written to {output_file}")

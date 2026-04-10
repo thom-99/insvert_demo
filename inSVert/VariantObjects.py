@@ -120,15 +120,13 @@ class Duplication(StructuralVariant):
 class Breakend(StructuralVariant):
     """
     Represents a single BND record in VCF 4.2.
-    A full translocation is composed of 4 Breakend objects.
     """
-    def __init__(self, chrom, pos, id, genotype, mate_id, event_id, alt_string, role):
+    def __init__(self, chrom, pos, id, genotype, mate_id, event_id, alt_string):
         # Length is typically 0 or 1 for BNDs as they represent a single point junction
         super().__init__(chrom, pos, 0, id, genotype)
         self.mate_id = mate_id
         self.event_id = event_id
         self.alt_string = alt_string # The bracketed ALT string (e.g., N[chr2:5000[)
-        self.role = role             # SOURCE or DESTINATION
 
     def get_alt(self):
         """Returns the specific bracketed ALT string for this breakend."""
@@ -145,7 +143,7 @@ class Breakend(StructuralVariant):
         # We include MATEID to link to the partner BND and EVENT to group all 4.
         # TRA_ROLE helps the simulation engine know if it's cutting or pasting.
         return (f"SVTYPE=BND;MATEID={self.mate_id};"
-                f"EVENT={self.event_id};TRA_ROLE={self.role}")
+                f"EVENT={self.event_id}")
 
     def format(self):
         """Overrides format to ensure SVLEN is not typically included for BNDs."""
@@ -156,7 +154,6 @@ class Breakend(StructuralVariant):
 
 
 
-'''
-bnd1 = Breakend('chr1', 10, 'inSVert.BND.1.1', '0/1', 'inSVert.BND.1.3', 'TRA1', 'N[chr1:10[' ,'SOURCE')
-print(bnd1.format())
-'''
+
+
+

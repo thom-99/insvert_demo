@@ -17,7 +17,7 @@ to simulate structural variants, simply type
 ```
 inSVert simulate config.yaml reference.fasta -o simulated.vcf
 ```
-where the first argument is the path to the config.yaml file and the second one the path to your reference genome in fasta format, you can specify in which file you want your simulated SVs after the -o option. 
+where the first argument is the path to the config.yaml file and the second one the path to your reference genome in fasta format, you can specify in which file you want your simulated SVs after the -o option. Additionally, you can use the optional --seed argument and set a seed if you need a simulation to be reproducible ex: --seed 123. 
 
 
 
@@ -37,7 +37,7 @@ to insert Structural Variants from a sorted VCF to a reference genome, simply ty
 ```
 inSVert insert reference.fasta simulated.vcf --ploidy 2 --gc 0.41 -o simulated.fasta
 ```
-where the first argument is the path to the reference genome and the second one the path to the VCF chosen by the user. 
+where the first argument is the path to the reference genome and the second one the path to the VCF chosen by the user; the --ploidy argument is not optional and requires to specify how many copies of the genome to simulate. If you are using inSVert simulate to produce a VCF, it has to match the ploidy argument of the config.yaml. In any case, the genotype string of your variants in the VCF should be informative about the ploidy number you need to insert here.  
 The optional argument --gc allows the user to specify the GC ratio used when generating insertion sequences, in order to make DNA sequences more realistic. The default is set to the human genome GC content (0.41). 
 
 
@@ -48,11 +48,17 @@ The optional argument --gc allows the user to specify the GC ratio used when gen
 
 for the final version:
 
+- add the option in the simulate.py module to accept a .bed file with some genomic coordinates to exclude from the simulation.
 - try to get rid of numpy in favour of built in python modules: random and math xx
 - implement reciprocal traslocations aka recombination xxx
+- implement inverted duplication
+- multithreading for multiple haplotypes. 
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name x
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
 - To maintain a lightweight VCF and independent modules , keep using symbolic <INS> tags , but add an option to the insert command to dynamically generate and save the actual insertion sequences into a separate auxiliary FASTA file for accurate benchmarking. xx
+
+TRA
+- adjust header of VCF
 
 
 

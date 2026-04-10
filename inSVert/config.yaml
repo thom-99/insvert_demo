@@ -14,7 +14,7 @@ variants:
       max_length: 100000     # maximum length of the variant
 
   INS:
-    count: 1000
+    count: 100
     distribution: "normal" 
     parameters:
       median_length: 10000
@@ -38,7 +38,7 @@ variants:
 
 
   INV:
-    count: 1000
+    count: 100
     distribution: "pareto"   
     parameters:
       median_length: 50000
@@ -46,8 +46,18 @@ variants:
       min_length: 1000
       max_length: 100000
 
+  # Copy & Paste traslocations / Interspersed Duplications
+  TRA_COPY:
+    count: 100
+    distribution: "pareto"   
+    parameters:
+      median_length: 50000
+      sigma: 1000
+      min_length: 1000
+      max_length: 100000
 
-  TRA:
+  # Cut & Paste traslocations
+  TRA_CUT:
     count: 100
     distribution: "pareto"   
     parameters:
