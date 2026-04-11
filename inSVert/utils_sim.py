@@ -303,27 +303,3 @@ def generate_genotype(ploidy:int, heterozygosity:float) -> str:
     return "/".join(map(str,alleles))
 
 
-
-
-
-def make_bnd_alt(ref_base, mate_chrom, mate_pos, join_side, mate_strand='+'):
-    """
-    Constructs a VCF 4.2 compliant bracketed ALT string.
-    
-    Arguments:
-    ref_base: The base in the REF column (e.g., 'N', 'A').
-    mate_chrom: The chromosome of the mate breakend.
-    mate_pos: The 1-based position of the mate breakend.
-    join_side: 'after' if the new sequence is joined to the right of ref_base (t[p[),
-               'before' if joined to the left (]p]t).
-    mate_strand: '+' if the piece extending from the mate is forward,
-                 '-' if it is the reverse complement.
-    """
-    p = f"{mate_chrom}:{mate_pos}"
-    
-    if join_side == 'after':
-        # Case: t[p[ (forward) or t]p] (reverse comp)
-        return f"{ref_base}[{p}[" if mate_strand == '+' else f"{ref_base}]{p}]"
-    else: 
-        # Case: ]p]t (forward) or [p[t (reverse comp)
-        return f"]{p}]{ref_base}" if mate_strand == '+' else f"[{p}[{ref_base}"

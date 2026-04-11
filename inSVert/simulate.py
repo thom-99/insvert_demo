@@ -162,8 +162,9 @@ def run(config_path, fasta_path, output_file, seed=None):
                         vcf.write(DUP.format() + '\n')
 
 
-            # translocations are made up by 4 BND Objects 
-            if svtype == "TRA_CUT":
+            # TRA_COPY & TRA_CUT processing
+            # part of the processing is shared, differences are in the number of BND lines and the position logging
+            if svtype == "TRA_CUT" or svtype=="TRA_COPY":
                 for l in fakedict[svtype]['lengths']:
 
                     # collecting the arguments to create the objects 
@@ -196,12 +197,10 @@ def run(config_path, fasta_path, output_file, seed=None):
                         pos_dst = utils_sim.select_pos(chrom_dst, len_dst)
 
                     if attempts <= 10:
-                        # instantiate 4 BND IDs
+                        # instantiate paste BND IDs
                         id_p1, id_p2 = f"{event_id}.P1", f"{event_id}.P2"
                         id_p3, id_p4 = f"{event_id}.P3", f"{event_id}.P4"
-                        id_h1, id_h2 = f"{event_id}.H1", f"{event_id}.H2"
 
-                        # create 6 BNDs with braketed ALT strings
                         # adjacency 1 : PASTE START
                         # joins destination falnk to the beginning of the moved segment
                         bnd_p1 = VariantObjects.Breakend(chrom_dst, pos_dst, id_p1, gt, id_p2, event_id, f"N[{chrom_src}:{pos_src + 1}[")
@@ -210,27 +209,49 @@ def run(config_path, fasta_path, output_file, seed=None):
                         # joins the end of the moved segment to the destination right flank
                         bnd_p3 = VariantObjects.Breakend(chrom_src, pos_src + l, id_p3, gt, id_p4, event_id, f"N[{chrom_dst}:{pos_dst + 1}[")
                         bnd_p4 = VariantObjects.Breakend(chrom_dst, pos_dst + 1, id_p4, gt, id_p3, event_id, f"]{chrom_src}:{pos_src+l}]N")
-                        # adjacency 3 : HEAL THE SOURCE
-                        # joins flank before segment to flank after segment, healing the rupture
-                        bnd_h1 = VariantObjects.Breakend(chrom_src, pos_src, id_h1, gt, id_h2, event_id, f"N[{chrom_src}:{pos_src + l + 1}[")
-                        bnd_h2 = VariantObjects.Breakend(chrom_src, pos_src + l + 1, id_h2, gt, id_h1, event_id, f"]{chrom_src}:{pos_src}]N")                        
-
-
-                        # update overlap tracker with both positions
-                        alleles = gt.split('/')
-                        for hap_idx, allele in enumerate(alleles):
-                            if allele == "1":
-                                # Track the source as a deleted interval
-                                bisect.insort(sv_positions[chrom_src][hap_idx], (pos_src, pos_src + l))
-                                # Track the destination as a point insertion
-                                bisect.insort(sv_positions[chrom_dst][hap_idx], (pos_dst, pos_dst + 1))
                         
-                        vcf.write(bnd_p1.format() + '\n')
-                        vcf.write(bnd_p2.format() + '\n')
-                        vcf.write(bnd_p3.format() + '\n')
-                        vcf.write(bnd_p4.format() + '\n')
-                        vcf.write(bnd_h1.format() + '\n')
-                        vcf.write(bnd_h2.format() + '\n')
+                        if svtype=="TRA_CUT":
+
+                            # adjacency 3 : HEAL THE SOURCE
+                            # joins flank before segment to flank after segment, healing the rupture
+                            id_h1, id_h2 = f"{event_id}.H1", f"{event_id}.H2"
+                            bnd_h1 = VariantObjects.Breakend(chrom_src, pos_src, id_h1, gt, id_h2, event_id, f"N[{chrom_src}:{pos_src + l + 1}[")
+                            bnd_h2 = VariantObjects.Breakend(chrom_src, pos_src + l + 1, id_h2, gt, id_h1, event_id, f"]{chrom_src}:{pos_src}]N")                        
+
+
+                            # update overlap tracker with both positions
+                            alleles = gt.split('/')
+                            for hap_idx, allele in enumerate(alleles):
+                                if allele == "1":
+                                    # Track the source as a deleted interval
+                                    bisect.insort(sv_positions[chrom_src][hap_idx], (pos_src, pos_src + l))
+                                    # Track the destination as a point insertion
+                                    bisect.insort(sv_positions[chrom_dst][hap_idx], (pos_dst, pos_dst + 1))
+                            
+                            # write 6 BNDs lines (4 paste + 2 heal)
+                            vcf.write(bnd_p1.format() + '\n')
+                            vcf.write(bnd_p2.format() + '\n')
+                            vcf.write(bnd_p3.format() + '\n')
+                            vcf.write(bnd_p4.format() + '\n')
+                            vcf.write(bnd_h1.format() + '\n')
+                            vcf.write(bnd_h2.format() + '\n')
+                        
+                        
+                        elif svtype=="TRA_COPY":
+                            
+                            alleles = gt.split('/')
+                            for hap_idx, allele in enumerate(alleles):
+                                if allele == "1":
+                                    # track only the point insertion
+                                    bisect.insort(sv_positions[chrom_dst][hap_idx], (pos_dst, pos_dst + 1))
+
+                            # write 4 BND lines (paste)
+                            vcf.write(bnd_p1.format() + '\n')
+                            vcf.write(bnd_p2.format() + '\n')
+                            vcf.write(bnd_p3.format() + '\n')
+                            vcf.write(bnd_p4.format() + '\n')
+
+
 
 
     print(f"VCF simulated. Output written to {output_file}")
