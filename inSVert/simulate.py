@@ -2,7 +2,7 @@ from . import VariantObjects
 from . import utils_sim
 from collections import defaultdict
 import bisect
-import numpy as np
+import random
 
 
 def run(config_path, fasta_path, output_file, seed=None):
@@ -10,7 +10,7 @@ def run(config_path, fasta_path, output_file, seed=None):
     # setting up the seed for reproducibility
     if seed is not None:
         print(f"Setting global random seed to: {seed}")
-        np.random.seed(seed)
+        random.seed(seed)
 
     print(f"Parsing config: {config_path}")
     config_info = utils_sim.parse_config(config_path)
@@ -42,7 +42,7 @@ def run(config_path, fasta_path, output_file, seed=None):
 
                     # collect arguments of the SV orbject
                     chrom, chrom_length = utils_sim.select_chr(chroms, lengths)
-                    pos = utils_sim.select_pos(chrom, chrom_length)
+                    pos = utils_sim.select_pos(chrom_length)
                     id = f'inSVert.{svtype}.{count}'
                     gt = utils_sim.generate_genotype(ploidy, heterozygosity)
                     count += 1
@@ -58,7 +58,7 @@ def run(config_path, fasta_path, output_file, seed=None):
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
                             break    
                         print(f'{svtype} exceeds the chormsome boundaries or overlaps with another SV, fetching a new position')
-                        pos = utils_sim.select_pos(chrom, chrom_length)
+                        pos = utils_sim.select_pos(chrom_length)
                         INS = VariantObjects.Insertion(chrom, pos, l, id, gt)
                     
                     # log SV and format a VCF line
@@ -76,7 +76,7 @@ def run(config_path, fasta_path, output_file, seed=None):
 
                     # collect arguments of the SV object 
                     chrom, chrom_length = utils_sim.select_chr(chroms, lengths)
-                    pos = utils_sim.select_pos(chrom, chrom_length)
+                    pos = utils_sim.select_pos(chrom_length)
                     id = f'inSVert.{svtype}.{count}'
                     gt = utils_sim.generate_genotype(ploidy, heterozygosity)
                     count += 1 
@@ -91,7 +91,7 @@ def run(config_path, fasta_path, output_file, seed=None):
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
                             break                     
                         print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
-                        pos = utils_sim.select_pos(chrom, chrom_length)
+                        pos = utils_sim.select_pos(chrom_length)
                         DEL = VariantObjects.Deletion(chrom, pos, l, id, gt)
 
                     if attempts <= 3:
@@ -106,7 +106,7 @@ def run(config_path, fasta_path, output_file, seed=None):
 
                     # collect arguments of the SV object  
                     chrom, chrom_length = utils_sim.select_chr(chroms, lengths)
-                    pos = utils_sim.select_pos(chrom, chrom_length)
+                    pos = utils_sim.select_pos(chrom_length)
                     id = f'inSVert.{svtype}.{count}'
                     gt = utils_sim.generate_genotype(ploidy, heterozygosity)
                     count += 1 
@@ -121,7 +121,7 @@ def run(config_path, fasta_path, output_file, seed=None):
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
                             break                     
                         print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
-                        pos = utils_sim.select_pos(chrom, chrom_length)
+                        pos = utils_sim.select_pos(chrom_length)
                         INV = VariantObjects.Inversion(chrom, pos, l, id, gt)
 
                     if attempts <= 3:
@@ -136,7 +136,7 @@ def run(config_path, fasta_path, output_file, seed=None):
 
                     # collect arguments for SV object 
                     chrom, chrom_length = utils_sim.select_chr(chroms, lengths)
-                    pos = utils_sim.select_pos(chrom, chrom_length)
+                    pos = utils_sim.select_pos(chrom_length)
                     id = f'inSVert.{svtype}.{count}'
                     gt = utils_sim.generate_genotype(ploidy, heterozygosity)
                     count += 1 
@@ -151,7 +151,7 @@ def run(config_path, fasta_path, output_file, seed=None):
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
                             break                     
                         print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
-                        pos = utils_sim.select_pos(chrom, chrom_length)
+                        pos = utils_sim.select_pos(chrom_length)
                         DUP = VariantObjects.Duplication(chrom, pos, l, id, gt, cn)
                     
                     if attempts <= 3:
@@ -169,10 +169,10 @@ def run(config_path, fasta_path, output_file, seed=None):
 
                     # collecting the arguments to create the objects 
                     chrom_src, len_src = utils_sim.select_chr(chroms, lengths)
-                    pos_src = utils_sim.select_pos(chrom_src, len_src)
+                    pos_src = utils_sim.select_pos(len_src)
 
                     chrom_dst, len_dst = utils_sim.select_chr(chroms, lengths)
-                    pos_dst = utils_sim.select_pos(chrom_dst, len_dst)
+                    pos_dst = utils_sim.select_pos(len_dst)
 
                     event_id = f'inSVert.{svtype}.{count}'
                     gt = utils_sim.generate_genotype(ploidy, heterozygosity)
@@ -192,9 +192,9 @@ def run(config_path, fasta_path, output_file, seed=None):
                         print(f'{svtype} exceeds boundaries or overlaps, fetching new positions')
                         # re-selecting both source and destination
                         chrom_src, len_src = utils_sim.select_chr(chroms, lengths)
-                        pos_src = utils_sim.select_pos(chrom_src, len_src)
+                        pos_src = utils_sim.select_pos(len_src)
                         chrom_dst, len_dst = utils_sim.select_chr(chroms, lengths)
-                        pos_dst = utils_sim.select_pos(chrom_dst, len_dst)
+                        pos_dst = utils_sim.select_pos(len_dst)
 
                     if attempts <= 10:
                         # instantiate paste BND IDs

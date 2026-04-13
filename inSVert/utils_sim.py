@@ -5,9 +5,10 @@ import pysam
 import os 
 import sys
 import yaml
-import numpy as np
 import datetime
 import bisect
+import math
+import random
 
 
 
@@ -20,7 +21,7 @@ def calculate_pareto_alpha(median_bp, min_bp):
     if median_bp <= min_bp:
         raise ValueError("median must be greater than min_length for a valid Pareto distribution")
     
-    alpha = np.log(2) / np.log(median_bp/min_bp)
+    alpha = math.log(2) / math.log(median_bp/min_bp)
     return alpha
     
 
@@ -51,8 +52,8 @@ def parse_config(config_path):
 
             lengths = []
             while len(lengths) < count:
-                # np.random.pareto(alpha) generates a type II pareto, so I adjust
-                sample = (np.random.pareto(alpha) + 1) * min_length
+                # paretovariate(a) returns a type I pareto where min_val = 
+                sample = random.paretovariate(alpha) * min_length
                 val = int(sample)
                 if params['min_length'] <= val <= params['max_length']:
                     lengths.append(val)
@@ -65,7 +66,7 @@ def parse_config(config_path):
 
             lengths = []
             while len(lengths) < count:
-                sample = np.random.normal(mu, sigma)
+                sample = random.gauss(mu, sigma)
                 val = int(sample)
                 if params['min_length'] <= val <= params['max_length']:
                     lengths.append(val)
@@ -84,7 +85,7 @@ def parse_config(config_path):
             weights = cn_settings.get('weights')
 
             # Create array of possible values (e.g. [2, 3, 4, 5])
-            possible_cns = np.arange(cn_min, cn_max + 1)
+            possible_cns = list(range(cn_min, cn_max + 1))
             
             # check and normalize weights to sum 1
             probs = None
@@ -95,12 +96,9 @@ def parse_config(config_path):
                         f"does not match copy number range {cn_min}-{cn_max} ({len(possible_cns)} values)."
                     )
                 
-                weights = np.array(weights)
-                probs = weights / weights.sum()
             
             # Sample Copy Numbers based on weights
-            # choice() picks 'count' items from 'possible_cns' using 'probs'
-            copy_numbers = np.random.choice(possible_cns, size=count, p=probs).tolist()
+            copy_numbers = random.choices(possible_cns, weights=weights, k=count)
             
             sv_data[sv_type]['copy_numbers'] = copy_numbers
     
@@ -160,12 +158,10 @@ def read_fai(fasta_path):
 PICKS A CHROMOSOME RANDOMLY TAKING INTO ACCOUNT THE LENGTH: WEIGHTED RANDOM SELECTION
 outputs the chromosome and the respective length
 '''
-def select_chr(chroms, lengths):
+def select_chr(chroms:list, lengths:list):
 
-    weights = np.array(lengths)
-    probabilities = weights / weights.sum()
-
-    chrom = np.random.choice(chroms, p=probabilities)
+    # random.choices always returns a list, so I set the len = 1 and take the first element
+    chrom = random.choices(chroms, weights=lengths, k=1)[0]
     chrom_idx = chroms.index(chrom)
 
     return chrom, lengths[chrom_idx]    
@@ -174,12 +170,13 @@ def select_chr(chroms, lengths):
 SELECTS A RANDOM POSITION ALONG THE SPECIFIED CHROMSOME
 optionally it can avoid choosing positions too close to the chr end
 '''
-def select_pos(chrom, length, buffer=1000):
+def select_pos(length, buffer=1000):
 
     if buffer > length/10:
         raise ValueError(f'edge buffer :{buffer} is too big, try decreasing it')
     
-    position = np.random.randint(1 + buffer, length - buffer + 1)
+    # random.randint is inclusive of both ends
+    position = random.randint(1 + buffer, length - buffer)
 
     return position
 
@@ -228,17 +225,6 @@ def buildheader(chroms, lengths, reference_path=None):
 
     return '\n'.join(header_lines) + '\n'
 
-
-'''
-FUNCTION TO CHECK WETHER A SV OVERLAPS WITH ANOTHER PRE-EXISTING ONE O(NxL) -- suboptimal solution
-the pre-existing SVs are stored in a dictionary {chrom : [(pos, end)]}
-'''
-def overlaps_suboptimal(chrom, start, end, sv_positions:dict):
-    for existing_start, existing_end in sv_positions[chrom]:
-        # the intervals do not overlap if the new interval ends before an existing one starts or if starts before the existing one ends
-        if not (end < existing_start or start > existing_end):
-            return True # it overlaps
-    return False
 
 
 
@@ -292,14 +278,13 @@ Ensures that at least one allele is '1'
 def generate_genotype(ploidy:int, heterozygosity:float) -> str:
 
     #randomly assign alleles based on heterozygosity prob
-    alleles = [1 if np.random.random() < heterozygosity else 0 for copy in range(ploidy)]
+    alleles = [1 if random.random() < heterozygosity else 0 for copy in range(ploidy)]
 
     #if all alleles are 0, we force at least one to be a 1
     if sum(alleles) == 0:
-        random_idx = np.random.randint(0,ploidy)
+        random_idx = random.randint(0,ploidy-1)
         alleles[random_idx] = 1
     
     #format the output as a VCF genotype string (ex. "0/1")
     return "/".join(map(str,alleles))
-
 
