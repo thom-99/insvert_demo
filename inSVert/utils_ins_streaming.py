@@ -82,39 +82,164 @@ def apply_duplication(ref_file, chrom: str, start: int, length: int, copy_number
 
 
 
+######################################################
+### TRASLOCATION VALIDATION AND HANDLING FUNCTIONS ###
+######################################################
+
+
+def is_valid_tra(event_id, adjacencies):
+    """
+    Rigorously validates the biological structure of a translocation event.
+    It reconstructs the 'logic' of the BNDs to see if they form a closed loop.
+    
+    Returns: (type, source_chrom, source_range, sink_chrom, sink_pos) or None
+    """
+    count = len(adjacencies)
+    
+    # -------------------------------------------------------------------------
+    # CATEGORY 1: COPY & PASTE (4 VCF lines / 2 Adjacencies)
+    # -------------------------------------------------------------------------
+    if count == 2:
+        # Step 1: Map positions to chromosomes to identify 'Source' vs 'Sink'
+        chroms = defaultdict(list)
+        for r, m in adjacencies:
+            chroms[r.chrom].append(r.pos)
+            chroms[m.chrom].append(m.pos)
+            
+        # A valid Copy&Paste must involve exactly 2 chromosomes
+        if len(chroms) != 2: 
+            return None
+        
+        # Step 2: Identify the 'Source' (The chrom where the two BNDs define a segment)
+        # We look for the chromosome that has more than one unique position
+        try:
+            source_chrom = next(c for c, p in chroms.items() if len(set(p)) > 1)
+        except StopIteration:
+            return None # Fails if all BNDs are at the exact same coordinate
+            
+        sink_chrom = next(c for c in chroms if c != source_chrom)
+        
+        # Step 3: Calculate length and ensure it's not a 1bp 'ambiguous' segment
+        source_pos = sorted(list(set(chroms[source_chrom])))
+        source_len = source_pos[1] - source_pos[0]
+        
+        if source_len <= 1: 
+            return None # Filter out 1bp segments to avoid destination/source confusion
+        
+        # Logically: source_pos[0] is segment start, source_pos[1] is segment end.
+        # sink_chrom[0] is the point of insertion.
+        return ("TRA_COPY", source_chrom, (source_pos[0], source_pos[1]), 
+                sink_chrom, chroms[sink_chrom][0])
+
+    # -------------------------------------------------------------------------
+    # CATEGORY 2: CUT & PASTE (6 VCF lines / 3 Adjacencies)
+    # -------------------------------------------------------------------------
+    elif count == 3:
+        # Step 1: Find the 'HEAL' adjacency (The one where both ends stay on the same chrom)
+        # This adjacency 'stitches' the hole left by the cut segment.
+        heal_adj = [a for a in adjacencies if a[0].chrom == a[1].chrom]
+        if len(heal_adj) != 1: 
+            return None # A TRA_CUT must have exactly one healing adjacency
+        
+        source_chrom = heal_adj[0][0].chrom
+        # The coordinates of the 'HEAL' adjacency define the boundaries of the cut
+        source_pos = sorted([heal_adj[0][0].pos, heal_adj[0][1].pos])
+        
+        # Calculate true sequence length (bases between the two heal points)
+        source_len = source_pos[1] - source_pos[0] - 1
+        
+        if source_len <= 1: 
+            return None # Rigorous filter for ambiguous 1bp segments
+        
+        # Step 2: Find the 'Sink' using the inter-chromosomal adjacencies (The 'PASTE' lines)
+        # We look for an adjacency where the two ends are on DIFFERENT chromosomes.
+        try:
+            sink_adj = next(a for a in adjacencies if a[0].chrom != a[1].chrom)
+        except StopIteration:
+            return None
+            
+        # The sink is whichever chromosome is NOT the source chromosome
+        if sink_adj[0].chrom != source_chrom:
+            sink_chrom = sink_adj[0].chrom
+            sink_pos = sink_adj[0].pos
+        else:
+            sink_chrom = sink_adj[1].chrom
+            sink_pos = sink_adj[1].pos
+        
+        return ("TRA_CUT", source_chrom, (source_pos[0], source_pos[1]), 
+                sink_chrom, sink_pos)
+
+    # Ditch any EVENT that doesn't strictly match 2 or 3 adjacencies
+    return None
+
+
 
 
 def prefetch_translocations(vcf_path, ref_path):
     """
-    Scans the VCF for translocation SOURCE records using pysam.
-    pysam automatically handles .vcf and .vcf.gz formats.
+    ===========================================================================
+    PHASE 1: TRANSLOCATION PREFETCH & VALIDATION
+    ===========================================================================
+    Scans the VCF to reconstruct biological translocation events from BND lines.
+    Builds an action map (deletions/insertions) for the streaming insertion loop.
+    ===========================================================================
     """
-    source_coords = defaultdict(lambda: [None, []])
-    tra_cache = {}
-
-    # 1. Parse the VCF using pysam (Compression-agnostic)
     vcf = pysam.VariantFile(vcf_path)
+    ref = pysam.FastaFile(ref_path)
+    
+    # Step 1: Group all BND records by their EVENT ID
+    events = defaultdict(list)
     for var in vcf:
-        # Check INFO tags using the pysam info proxy
-        if var.info.get("SVTYPE") == "BND" and var.info.get("TRA_ROLE") == "SOURCE":
+        if var.info.get("SVTYPE") == "BND":
             event_id = var.info.get("EVENT")
             if event_id:
-                # Store coordinates (var.pos is 1-based)
-                source_coords[event_id][0] = var.chrom
-                source_coords[event_id][1].append(var.pos)
-    vcf.close()
+                events[event_id].append(var)
 
-    # 2. Fetch sequences from the reference FASTA
-    ref = pysam.FastaFile(ref_path)
-    for event_id, (chrom, positions) in source_coords.items():
-        if len(positions) == 2:
-            start = min(positions)
-            end = max(positions)
-            # pysam fetch is 0-based, so subtract 1 from VCF coordinates
-            # We fetch the segment between the two source breakends
-            sequence = ref.fetch(chrom, start - 1, end)
-            tra_cache[event_id] = sequence
+    # Output structure for O(1) lookup during streaming
+    tra_map = {
+        "deletions": defaultdict(dict),  # {chrom: {event_id: length}}
+        "insertions": defaultdict(dict)  # {chrom: {event_id: sequence}}
+    }
+
+    # Step 2: Categorize and Extract Sequences
+    for event_id, records in events.items():
+        # Pair records by MATEID to find novel adjacencies (junctions)
+        adjacencies = []
+        seen = set()
+        for r in records:
+            mate_id = r.info.get("MATEID")[0] if r.info.get("MATEID") else None
+            if r.id not in seen and mate_id:
+                mate = next((m for m in records if m.id == mate_id), None)
+                if mate:
+                    adjacencies.append((r, mate))
+                    seen.update([r.id, mate.id])
+
+        # Step 3: Run Rigorous Validation
+        result = is_valid_tra(event_id, adjacencies)
+        if not result:
+            continue # Skip invalid or unsupported (e.g., single breakends)
             
-    ref.close()
-    return tra_cache
+        tra_type, src_chr, (src_start, src_end), snk_chr, snk_pos = result
 
+        # Step 4: Cache sequence and log actions
+        # Fetch 0-based sequence between the source breakends
+        sequence = ref.fetch(src_chr, src_start, src_end - 1)
+        
+        if tra_type == "TRA_CUT":
+            # For CUT: We delete from source and insert at sink
+            tra_map["deletions"][src_chr][event_id] = len(sequence)
+            tra_map["insertions"][snk_chr][event_id] = sequence
+        else:
+            # For COPY: We only insert at sink
+            tra_map["insertions"][snk_chr][event_id] = sequence
+
+    vcf.close()
+    ref.close()
+    return tra_map
+
+
+valid_tra = prefetch_translocations('data/corrected-cut-paste-tra.vcf','data/cerevisiae_test.fa')
+total_deletions = sum(len(events) for events in valid_tra['deletions'].values())
+total_insertions = sum(len(events) for events in valid_tra['insertions'].values())
+print(f"Total Deletion Events: {total_deletions}")
+print(f"Total Insertion Events: {total_insertions}")

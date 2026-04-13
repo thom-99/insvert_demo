@@ -20,8 +20,7 @@ according to the VCF 4.2 specifications, all of these instances have to be repre
 5. according to the EVENTID (TRA type) format the correct number of lines:
 	- cut&paste : 3 adjacencies = 6 vcf BND lines
 	- copy&paste : 2 adjacencies = 4 vcf BND lines 
-	- reciprocal : 4 adjacencies == 8 vcf BND lines
-6. to be even more accurate, instead of the symbolic 'N' as REF, we shall use the correct base 
+(optional, ignore for now) 6. to be even more accurate, instead of the symbolic 'N' as REF, we shall use the correct base 
 7. update haplotype tracking of sv_positions according to the TRA type
 
 # inSVert insert

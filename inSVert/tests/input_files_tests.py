@@ -73,3 +73,10 @@ def prepare_vcf(vcf_path):
         if os.path.exists(sorted_vcf_path):
             os.remove(sorted_vcf_path)
         raise RuntimeError(f"Failed to prepare VCF: {e}")
+    
+
+
+
+
+
+prepare_vcf('data/corrected-cut-paste-tra.vcf')
