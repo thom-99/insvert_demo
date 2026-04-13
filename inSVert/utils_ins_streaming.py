@@ -199,71 +199,67 @@ def is_valid_tra(event_id, adjacencies):
 
     return None
 
+
+
+
+
 def prefetch_translocations(vcf_path, ref_path):
     """
     ===========================================================================
-    PHASE 1: TRANSLOCATION PREFETCH & VALIDATION
-    ===========================================================================
-    Scans the VCF to reconstruct biological translocation events from BND lines.
-    Builds an action map (deletions/insertions) for the streaming insertion loop.
+    Scans the VCF for BND (breakend) records to reconstruct biological 
+    translocation events. It pre-fetches translocated sequences and maps 
+    them to specific genomic "triggers."
+
+    Args:
+        vcf_path (str): Path to the input VCF containing structural variants.
+        ref_path (str): Path to the reference FASTA genome.
+
+    Returns:
+        dict: A nested dictionary (Action Map) structured as:
+            {
+                "deletions": { 
+                    chrom (str): { pos (int): (length (int), event_id (str)) }
+                },
+                "insertions": { 
+                    chrom (str): { pos (int): (sequence (str), event_id (str)) }
+                }
+            }
+        - 'deletions' trigger a reference skip (the "cut").
+        - 'insertions' trigger a sequence paste (the "paste").
     ===========================================================================
     """
     vcf = pysam.VariantFile(vcf_path)
     ref = pysam.FastaFile(ref_path)
-    
-    # Step 1: Group all BND records by their EVENT ID
     events = defaultdict(list)
     for var in vcf:
         if var.info.get("SVTYPE") == "BND":
-            event_id = var.info.get("EVENT")
-            if event_id:
-                events[event_id].append(var)
+            events[var.info.get("EVENT")].append(var)
 
-    # Output structure for O(1) lookup during streaming
-    tra_map = {
-        "deletions": defaultdict(dict),  # {chrom: {event_id: length}}
-        "insertions": defaultdict(dict)  # {chrom: {event_id: sequence}}
-    }
+    # Actions keyed by [chrom][pos] = (type, data, event_id)
+    tra_map = {"deletions": defaultdict(dict), "insertions": defaultdict(dict)}
 
-    # Step 2: Categorize and Extract Sequences
     for event_id, records in events.items():
-        # Pair records by MATEID to find novel adjacencies (junctions)
+        # Helper to pair BNDs by MATEID
         adjacencies = []
         seen = set()
         for r in records:
-            mate_id = r.info.get("MATEID")[0] if r.info.get("MATEID") else None
-            if r.id not in seen and mate_id:
-                mate = next((m for m in records if m.id == mate_id), None)
-                if mate:
+            if r.id not in seen:
+                mate = next((m for m in records if m.id == r.info.get("MATEID")[0]), None)
+                if mate: 
                     adjacencies.append((r, mate))
                     seen.update([r.id, mate.id])
-
-        # Step 3: Run Rigorous Validation
-        result = is_valid_tra(event_id, adjacencies)
-        if not result:
-            continue # Skip invalid or unsupported (e.g., single breakends)
-            
-        tra_type, src_chr, (src_start, src_end), snk_chr, snk_pos = result
-
-        # Step 4: Cache sequence and log actions
-        # Fetch 0-based sequence between the source breakends
-        sequence = ref.fetch(src_chr, src_start, src_end - 1)
         
+        # check if the traslocation is valid and categorize it
+        res = is_valid_tra(event_id, adjacencies)
+        if not res: continue
+        
+        tra_type, src_chr, (s_start, s_end), snk_chr, snk_pos = res
+        sequence = ref.fetch(src_chr, s_start, s_end - 1)
+
         if tra_type == "TRA_CUT":
-            # For CUT: We delete from source and insert at sink
-            tra_map["deletions"][src_chr][event_id] = len(sequence)
-            tra_map["insertions"][snk_chr][event_id] = sequence
-        else:
-            # For COPY: We only insert at sink
-            tra_map["insertions"][snk_chr][event_id] = sequence
+            tra_map["deletions"][src_chr][s_start] = (len(sequence), event_id)
+        
+        tra_map["insertions"][snk_chr][snk_pos] = (sequence, event_id)
 
-    vcf.close()
-    ref.close()
+    vcf.close(); ref.close()
     return tra_map
-
-
-valid_tra = prefetch_translocations('test_tra.vcf','data/cerevisiae_test.fa')
-total_deletions = sum(len(events) for events in valid_tra['deletions'].values())
-total_insertions = sum(len(events) for events in valid_tra['insertions'].values())
-print(f"Total Deletion Events: {total_deletions}")
-print(f"Total Insertion Events: {total_insertions}")

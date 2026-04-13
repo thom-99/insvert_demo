@@ -65,16 +65,6 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
                         if var.samples[0]['GT'][haplotype] != 1:
                             continue 
 
-                        # 2. Rigorous BND Skip Check
-                        # Skip if we already handled the "cut" or "paste" for this event 
-                        # it needs to be here so I do not write the reference up to the second BNDs (see next check)
-                        svtype = var.info.get("SVTYPE")
-                        if svtype == 'BND':
-                            event_id = var.info.get('EVENT')
-                            role = var.info.get('TRA_ROLE')
-                            if (role == 'SOURCE' and event_id in processed_sources) or \
-                            (role == 'SINK' and event_id in processed_sinks):
-                                continue
 
                         start = var.pos - 1 #VCF is 1-indexed, python is 0-indexed
                         
@@ -89,52 +79,54 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
                             ref_pos = start
                         
                         # 2. Dispatch to utils_ins based on Type
-
-                        if svtype != 'BND':
-
+                        svtype = var.info.get("SVTYPE")
+                        
+                        # comoute the length of the variant, BNDs are excluded as they do not have a svlength
+                        if svtype != "BND":
                             svlen = var.info.get("SVLEN")
                             if isinstance(svlen, tuple): svlen = svlen[0]
                             if svlen is None: svlen = var.stop - var.start
-                            length = abs(svlen)
-                        
+                            svlen = abs(svlen)
 
+                            # VARIANT PROCESSING
                             if svtype == 'INS':
-                                ins_seq = utils_ins_streaming.generate_seq(length, gc_content)
+                                ins_seq = utils_ins_streaming.generate_seq(svlen, gc_content)
                                 utils_ins_streaming.apply_insertion(writer, ins_seq)
                                 # ref_pos stays same
-                                
+                                    
                             elif svtype == 'DEL':
-                                ref_pos = utils_ins_streaming.apply_deletion(ref_pos, length)
+                                ref_pos = utils_ins_streaming.apply_deletion(ref_pos, svlen)
                                 
                             elif svtype == 'INV':
-                                ref_pos = utils_ins_streaming.apply_inversion(ref, chrom, start, length, writer)
-                                
+                                ref_pos = utils_ins_streaming.apply_inversion(ref, chrom, start, svlen, writer)
+                                    
                             elif svtype == 'DUP':
-                                # Extract CN logic here or inside utils? 
-                                # Keeping extraction here is cleaner for the utility function signature
                                 sample_name = list(var.samples.keys())[0] if var.samples else None
                                 cn = var.samples[sample_name]['CN'] if sample_name else 2
-                                
-                                ref_pos = utils_ins_streaming.apply_duplication(ref, chrom, start, length, cn, writer)
+                                    
+                                ref_pos = utils_ins_streaming.apply_duplication(ref, chrom, start, svlen, cn, writer)
 
-                        else:
-                            # process TRA (BNDs)
-                            role = var.info.get('TRA_ROLE')
+                        if svtype == 'BND':
                             event_id = var.info.get('EVENT')
 
-                            if role == 'SOURCE' and event_id not in processed_sources:
-                                cached_seq = tra_cache.get(event_id, "")
-                                length_to_skip = len(cached_seq)
-                                if length_to_skip > 0:
-                                    ref_pos = utils_ins_streaming.apply_deletion(ref_pos, length_to_skip)
-                                    processed_sources.add(event_id)
+                            # ACTION: the 'CUT' i.e. source of cut & paste TRAs
+                            del_job = tra_cache["deletions"].get(chrom, {}).get(var.pos)
+                            # if there is a deletion job to carry out and I have not carried out before
+                            if del_job and event_id not in processed_sources:
+                                length, _ = del_job
+                                ref_pos = utils_ins_streaming.apply_deletion(ref_pos, length)
+                                processed_sources.add(event_id)
+                                continue
 
-                            elif role == 'SINK' and event_id not in processed_sinks:
-                                cached_seq = tra_cache.get(event_id, "")
-                                if cached_seq:
-                                    utils_ins_streaming.apply_insertion(writer, cached_seq)
-                                    processed_sinks.add(event_id)
-                                
+                            # ACTION: the 'PASTE' i.e. source of the cut&paste or copy&paste TRAs
+                            ins_job = tra_cache["insertions"].get(chrom, {}).get(var.pos)
+                            if ins_job and event_id not in processed_sinks:
+                                seq, _ = ins_job
+                                utils_ins_streaming.apply_insertion(writer, seq)
+                                processed_sinks.add(event_id)
+                                continue
+
+                                                          
 
                     # 3. Finish Chromosome
                     if ref_pos < chrom_len:

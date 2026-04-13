@@ -48,7 +48,7 @@ variants:
 
   # Copy & Paste traslocations / Interspersed Duplications
   TRA_COPY:
-    count: 100
+    count: 1000
     distribution: "pareto"   
     parameters:
       median_length: 50000
@@ -58,7 +58,7 @@ variants:
 
   # Cut & Paste traslocations
   TRA_CUT:
-    count: 100
+    count: 1000
     distribution: "pareto"   
     parameters:
       median_length: 50000

@@ -77,6 +77,3 @@ def prepare_vcf(vcf_path):
 
 
 
-
-
-prepare_vcf('data/corrected-cut-paste-tra.vcf')
