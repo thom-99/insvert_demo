@@ -87,10 +87,11 @@ def apply_duplication(ref_file, chrom: str, start: int, length: int, copy_number
 ######################################################
 
 
+
 def is_valid_tra(event_id, adjacencies):
     """
     Rigorously validates the biological structure of a translocation event.
-    It reconstructs the 'logic' of the BNDs to see if they form a closed loop.
+    Supports both Inter-chromosomal and Intra-chromosomal (transposition) events.
     
     Returns: (type, source_chrom, source_range, sink_chrom, sink_pos) or None
     """
@@ -100,80 +101,103 @@ def is_valid_tra(event_id, adjacencies):
     # CATEGORY 1: COPY & PASTE (4 VCF lines / 2 Adjacencies)
     # -------------------------------------------------------------------------
     if count == 2:
-        # Step 1: Map positions to chromosomes to identify 'Source' vs 'Sink'
-        chroms = defaultdict(list)
+        # Step 1: Group positions by chromosome
+        chrom_map = defaultdict(list)
         for r, m in adjacencies:
-            chroms[r.chrom].append(r.pos)
-            chroms[m.chrom].append(m.pos)
+            chrom_map[r.chrom].append(r.pos)
+            chrom_map[m.chrom].append(m.pos)
             
-        # A valid Copy&Paste must involve exactly 2 chromosomes
-        if len(chroms) != 2: 
+        # Identify Source vs Sink
+        if len(chrom_map) == 2:
+            # INTER-chromosomal logic (existing)
+            source_chrom = next(c for c, p in chrom_map.items() if len(set(p)) > 1)
+            sink_chrom = next(c for c in chrom_map if c != source_chrom)
+            source_pos = sorted(list(set(chrom_map[source_chrom])))
+            sink_pos = min(chrom_map[sink_chrom])
+        
+        elif len(chrom_map) == 1:
+            # INTRA-chromosomal logic
+            # Heuristic: The two positions closest to each other (dist 1) are the Sink.
+            # The other two positions define the Source segment.
+            source_chrom = sink_chrom = list(chrom_map.keys())[0]
+            all_pos = sorted(chrom_map[source_chrom])
+            
+            # Find which pair in the sorted list are adjacent (the sink join point)
+            found_sink = False
+            for i in range(len(all_pos) - 1):
+                if all_pos[i+1] - all_pos[i] == 1:
+                    sink_pos = all_pos[i]
+                    # The other two positions are the source
+                    source_pos = [p for p in all_pos if p != all_pos[i] and p != all_pos[i+1]]
+                    found_sink = True
+                    break
+            if not found_sink: return None
+        else:
             return None
         
-        # Step 2: Identify the 'Source' (The chrom where the two BNDs define a segment)
-        # We look for the chromosome that has more than one unique position
-        try:
-            source_chrom = next(c for c, p in chroms.items() if len(set(p)) > 1)
-        except StopIteration:
-            return None # Fails if all BNDs are at the exact same coordinate
+        # Rigorous Logic: Source must be > 1bp
+        if source_pos[1] - source_pos[0] <= 1: 
+            return None 
             
-        sink_chrom = next(c for c in chroms if c != source_chrom)
-        
-        # Step 3: Calculate length and ensure it's not a 1bp 'ambiguous' segment
-        source_pos = sorted(list(set(chroms[source_chrom])))
-        source_len = source_pos[1] - source_pos[0]
-        
-        if source_len <= 1: 
-            return None # Filter out 1bp segments to avoid destination/source confusion
-        
-        # Logically: source_pos[0] is segment start, source_pos[1] is segment end.
-        # sink_chrom[0] is the point of insertion.
         return ("TRA_COPY", source_chrom, (source_pos[0], source_pos[1]), 
-                sink_chrom, chroms[sink_chrom][0])
+                sink_chrom, sink_pos)
 
     # -------------------------------------------------------------------------
     # CATEGORY 2: CUT & PASTE (6 VCF lines / 3 Adjacencies)
     # -------------------------------------------------------------------------
     elif count == 3:
-        # Step 1: Find the 'HEAL' adjacency (The one where both ends stay on the same chrom)
-        # This adjacency 'stitches' the hole left by the cut segment.
-        heal_adj = [a for a in adjacencies if a[0].chrom == a[1].chrom]
-        if len(heal_adj) != 1: 
-            return None # A TRA_CUT must have exactly one healing adjacency
+        # Step 1: Identify the 'HEAL' adjacency
+        # we can consider the HEAL adj as the one that encompasses inside another adj, the COPY/SOURCE one
+
+        heal_adj = None
+        all_bnds = []
+        for r, m in adjacencies:
+            all_bnds.extend([(r.chrom, r.pos), (m.chrom, m.pos)])
+
+        for r, m in adjacencies:
+            # a heal adj must be interchromosomal
+            if r.chrom == m.chrom:
+                # find all the other breakpoints present on this same chrom
+                other_bnds_on_this_chrom = [pos for chrom, pos in all_bnds if chrom == r.chrom and pos != r.pos and pos != m.pos]
+                start, end = min(r.pos, m.pos), max(r.pos, m.pos)
+                
+                # TOPOLOGY CHECK !!!
+                # if this adjacency spans (start to end) any other breakpoints it it the HEAL
+                # the 'len==0' conditions covers the Inter-chromosomal case in which only the HEAL adj exists on the source chrom
+                if any(start < p < end for p in other_bnds_on_this_chrom) or len(other_bnds_on_this_chrom) == 0:
+                    heal_adj = (r, m)
+                    break
         
-        source_chrom = heal_adj[0][0].chrom
-        # The coordinates of the 'HEAL' adjacency define the boundaries of the cut
-        source_pos = sorted([heal_adj[0][0].pos, heal_adj[0][1].pos])
+        if not heal_adj: return None # if no HEAL adjacency is found, the TRA cannot be characterized
         
-        # Calculate true sequence length (bases between the two heal points)
-        source_len = source_pos[1] - source_pos[0] - 1
+        source_chrom = heal_adj[0].chrom
+        source_pos = sorted([heal_adj[0].pos, heal_adj[1].pos])
         
-        if source_len <= 1: 
-            return None # Rigorous filter for ambiguous 1bp segments
+        # Rigorous Logic: Source must be > 1bp
+        if source_pos[1] - source_pos[0] - 1 <= 1: 
+            return None 
+
+        # Step 2: Find the Sink from 'PASTE' adjacencies
+        # the remaining 2 adj are the 'PASTE' junctions, they connect the segment ends to a sinlge insertion point
+        paste_adjs = [a for a in adjacencies if a[0].id != heal_adj[0].id and a[0].id != heal_adj[1].id]
         
-        # Step 2: Find the 'Sink' using the inter-chromosomal adjacencies (The 'PASTE' lines)
-        # We look for an adjacency where the two ends are on DIFFERENT chromosomes.
-        try:
-            sink_adj = next(a for a in adjacencies if a[0].chrom != a[1].chrom)
-        except StopIteration:
-            return None
-            
-        # The sink is whichever chromosome is NOT the source chromosome
-        if sink_adj[0].chrom != source_chrom:
-            sink_chrom = sink_adj[0].chrom
-            sink_pos = sink_adj[0].pos
-        else:
-            sink_chrom = sink_adj[1].chrom
-            sink_pos = sink_adj[1].pos
+        
+        sink_chrom = sink_pos = None
+        for r, m in paste_adjs:
+            for bnd in [r, m]:
+                # the sink is the side of the junction that is NOT the segment
+                # it is identifiable either by being on a different chrom OR by being outside of the range of the heal
+                if bnd.chrom != source_chrom or (bnd.pos < source_pos[0] or bnd.pos > source_pos[1]):
+                    sink_chrom, sink_pos = bnd.chrom, bnd.pos
+                    break
+            if sink_chrom: break #stop once the destination is found
+
+        if not sink_chrom: return None
         
         return ("TRA_CUT", source_chrom, (source_pos[0], source_pos[1]), 
                 sink_chrom, sink_pos)
 
-    # Ditch any EVENT that doesn't strictly match 2 or 3 adjacencies
     return None
-
-
-
 
 def prefetch_translocations(vcf_path, ref_path):
     """
@@ -238,7 +262,7 @@ def prefetch_translocations(vcf_path, ref_path):
     return tra_map
 
 
-valid_tra = prefetch_translocations('data/corrected-cut-paste-tra.vcf','data/cerevisiae_test.fa')
+valid_tra = prefetch_translocations('test_tra.vcf','data/cerevisiae_test.fa')
 total_deletions = sum(len(events) for events in valid_tra['deletions'].values())
 total_insertions = sum(len(events) for events in valid_tra['insertions'].values())
 print(f"Total Deletion Events: {total_deletions}")

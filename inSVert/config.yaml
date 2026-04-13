@@ -5,7 +5,7 @@ genome:
 variants:
 
   DEL:
-    count: 1000        
+    count: 0        
     distribution: "pareto"
     parameters:
       median_length: 5000      # Target median length in bp
@@ -14,7 +14,7 @@ variants:
       max_length: 100000     # maximum length of the variant
 
   INS:
-    count: 100
+    count: 0
     distribution: "normal" 
     parameters:
       median_length: 10000
@@ -24,7 +24,7 @@ variants:
 
 
   DUP:                                # tandem duplications
-    count: 1000               
+    count: 0               
     distribution: "normal"
     parameters:
       median_length: 2000
@@ -38,7 +38,7 @@ variants:
 
 
   INV:
-    count: 100
+    count: 0
     distribution: "pareto"   
     parameters:
       median_length: 50000
