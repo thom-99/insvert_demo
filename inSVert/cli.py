@@ -42,7 +42,13 @@ def cli():
     default=None,
     help="Global random seed for reproducible simulations"
 )
-def simulate_cmd(config, reference, output, seed):
+@click.option(
+    "--exclude",
+    type=click.Path(exists=True, dir_okay=False),
+    default=None,
+    help="BED file containing genomic coordinates to exclude from SV simulation."
+)
+def simulate_cmd(config, reference, output, seed, exclude):
     """
     Generate simulated structural variants based on a configuration file.
     
@@ -67,7 +73,7 @@ def simulate_cmd(config, reference, output, seed):
     # 2. Execution with Spinner
     with console.status("[bold cyan]Generating Structural Variants...[/bold cyan]", spinner="dots"):
         try:
-            simulate.run(config, reference, output, seed)
+            simulate.run(config, reference, output, seed, exclude)
         except Exception as e:
             console.print(f"[bold red]Error:[/bold red] {e}")
             raise click.Abort()

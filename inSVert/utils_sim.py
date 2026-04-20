@@ -117,7 +117,7 @@ def parse_config(config_path):
 IF IT EXISTS, READS A FAI FILE FROM THE PATH OF THE FASTA; ELSE IT CREATES IT WITH PYSAM
 returns a tuple of all the ([chromosomes],[lengths])
 '''
-def read_fai(fasta_path):
+def read_fai(fasta_path:str):
  
     #check suffix 
     if fasta_path.endswith('.fasta') or fasta_path.endswith('.fa'):
@@ -153,6 +153,70 @@ def read_fai(fasta_path):
     print(f"Loaded {len(chroms)} chromosomes from {fai_file}", file=sys.stderr)
 
     return chroms, lengths
+
+
+def parse_bed(bed_path:str):
+    """
+    Parses a BED file into a dictionary: {chrom: [(start, end), ...]}
+    Intervals are stored as sorted tuples for binary search.
+    """
+    excluded_ranges = {}
+    if not bed_path or not os.path.exists(bed_path):
+        return None
+
+    with open(bed_path, 'r') as f:
+        for line in f:
+            if line.startswith(('#', 'track', 'browser')): continue
+            parts = line.strip().split('\t')
+            # to add: print a warning to the screen that the line is not properly formatted
+            if len(parts) != 3: continue
+            
+            chrom, start, end = parts[0], int(parts[1]), int(parts[2])
+            if chrom not in excluded_ranges:
+                excluded_ranges[chrom] = []
+            excluded_ranges[chrom].append((start, end))
+
+    # Sort intervals by start position for bisect to work
+    for chrom in excluded_ranges:
+        excluded_ranges[chrom].sort()
+    
+    return excluded_ranges
+
+
+def overlaps_excluded_region(chrom, start, end, excluded_regions:dict):
+    """
+    Checks if a proposed SV interval overlaps with any region in the BED file.
+    Uses O(log N) binary search.
+    The structure of this is like a base for the overlaps() function, which is haplotype aware
+    and is designed to keep track of variants specifically, in the future it makes sense to make one that can be used for both purposes
+    """
+    if not excluded_regions or chrom not in excluded_regions:
+        return False
+    
+    intervals = excluded_regions[chrom]
+    # finding the insertion point in the sorted excluded ranges of the chromosome of interest
+    idx = bisect.bisect_right(intervals, (start, end))
+
+    # check interval immediately before
+    if idx > 0: #if it is not the first
+        prev_start, prev_end = intervals[idx - 1]
+        if prev_end > start:
+            return True
+        
+    # check interval immediately after
+    if idx < len(intervals): #if it is not the last
+        next_start, next_end = intervals[idx]
+        if next_start < end:
+            return True 
+        
+    return False
+
+
+
+
+
+
+
 
 '''
 PICKS A CHROMOSOME RANDOMLY TAKING INTO ACCOUNT THE LENGTH: WEIGHTED RANDOM SELECTION
@@ -265,9 +329,6 @@ def overlaps(chrom, start, end, genotype_str, sv_positions: dict):
 
     # otherwise there's no overlap
     return False
-
-
-
 
 
 

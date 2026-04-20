@@ -5,7 +5,7 @@ import bisect
 import random
 
 
-def run(config_path, fasta_path, output_file, seed=None):
+def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None):
 
     # setting up the seed for reproducibility
     if seed is not None:
@@ -20,6 +20,13 @@ def run(config_path, fasta_path, output_file, seed=None):
 
     print(f"Reading index from: {fasta_path}")
     chroms, lengths = utils_sim.read_fai(fasta_path)
+
+    if excluded_bed is not None:
+        print(f"Reading the bed file with excluded genomic regions")
+        excluded_regions = utils_sim.parse_bed(excluded_bed)
+        if excluded_regions:
+            print(f"Loaded excluded genomic regions from {excluded_bed}")
+
 
     # {chrom: {haplotype_index: [(pos, end)]}}
     # the lambda is a necessity because deafultdict requires a function... it's a bit convoluted
@@ -52,7 +59,9 @@ def run(config_path, fasta_path, output_file, seed=None):
                     # if either the SV is placed out of chromsome bounds or overlapping with another SV
                     # then another chromsome and position are chosen for the SV
                     attempts = 0
-                    while INS.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, INS.get_end(), gt, sv_positions):
+                    while (INS.get_end() > chrom_length or 
+                           utils_sim.overlaps(chrom, pos, INS.get_end(), gt, sv_positions) or 
+                           utils_sim.overlaps_excluded_region(chrom, pos, INS.get_end(), excluded_regions)):
                         attempts += 1
                         if attempts > 3:
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
@@ -85,7 +94,9 @@ def run(config_path, fasta_path, output_file, seed=None):
                     DEL = VariantObjects.Deletion(chrom, pos, l, id, gt)
 
                     attempts = 0
-                    while DEL.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, DEL.get_end(), gt, sv_positions):
+                    while (DEL.get_end() > chrom_length or 
+                           utils_sim.overlaps(chrom, pos, DEL.get_end(), gt, sv_positions) or
+                           utils_sim.overlaps_excluded_region(chrom, pos, DEL.get_end(), excluded_regions)):
                         attempts += 1
                         if attempts > 3:
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
@@ -115,7 +126,9 @@ def run(config_path, fasta_path, output_file, seed=None):
 
                     # loop to produce valid pos to allow END to be within chromsome bounds
                     attempts = 0
-                    while INV.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, INV.get_end(), gt, sv_positions):
+                    while (INV.get_end() > chrom_length or 
+                           utils_sim.overlaps(chrom, pos, INV.get_end(), gt, sv_positions) or
+                           utils_sim.overlaps_excluded_region(chrom, pos, INV.get_end(), excluded_regions)):
                         attempts += 1
                         if attempts > 3:
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
@@ -145,7 +158,9 @@ def run(config_path, fasta_path, output_file, seed=None):
 
                     # loop to produce valid pos to allow END to be within chromsome bounds
                     attempts = 0
-                    while DUP.get_end() > chrom_length or utils_sim.overlaps(chrom, pos, DUP.get_end(), gt, sv_positions):
+                    while (DUP.get_end() > chrom_length or 
+                           utils_sim.overlaps(chrom, pos, DUP.get_end(), gt, sv_positions) or
+                           utils_sim.overlaps_excluded_region(chrom, pos, DUP.get_end(), excluded_regions)):
                         attempts += 1
                         if attempts > 3:
                             print(f'{svtype} n: {count} could not be placed after 3 attempts, skipping')
@@ -183,7 +198,9 @@ def run(config_path, fasta_path, output_file, seed=None):
                     while (pos_src + l > len_src or 
                            pos_dst + 1 > len_dst or 
                            utils_sim.overlaps(chrom_src, pos_src, pos_src + l, gt, sv_positions) or
-                           utils_sim.overlaps(chrom_dst, pos_dst, pos_dst + 1, gt, sv_positions)):
+                           utils_sim.overlaps(chrom_dst, pos_dst, pos_dst + 1, gt, sv_positions) or 
+                           utils_sim.overlaps_excluded_region(chrom_src, pos_src, pos_src + l, excluded_regions) or
+                           utils_sim.overlaps_excluded_region(chrom_dst, pos_dst, pos_dst + 1, excluded_regions)):
                         
                         attempts += 1
                         if attempts > 10:

@@ -9,8 +9,7 @@ description = "Structural Variant Simulation & Insertion Toolkit"
 authors = [{name = "Thomas Di Marzo"}]
 dependencies = [
     "pysam>=0.22.0",
-    "numpy",
-    "pyyaml",,
+    "pyyaml",
     "rich-click",
     "rich"
 ]

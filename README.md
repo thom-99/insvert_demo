@@ -49,8 +49,12 @@ The optional argument --gc allows the user to specify the GC ratio used when gen
 for the final version:
 
 - add the option in the simulate.py module to accept a .bed file with some genomic coordinates to exclude from the simulation.
-- implement inverted duplication
-- multithreading for multiple haplotypes. 
+    throw a warning it the chrom names of the .bed and of the .fasta.fai do not match -> -bed will get ignored
+
+- implement inverted duplication (?) 
+- implement reciprocal traslocations (?)
+- implement an optional argument to allow for the output of a .bed-like file in addition to the VCF for a more human readible variant log output 
+- multiprocessing for multiple haplotypes as a DEFAULT 
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name x
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
 - To maintain a lightweight VCF and independent modules , keep using symbolic <INS> tags , but add an option to the insert command to dynamically generate and save the actual insertion sequences into a separate auxiliary FASTA file for accurate benchmarking. xx
@@ -64,6 +68,8 @@ super optional (based on performance on larger genomes)
 - write a nextflow benchmarking pipeline 
 - when writing the pipeline, perform multiple simulations with different seeds to be able to build a precision-recall curve
 
+utilities:
+- script that takes a user inputted SV in a simple to understand format like a .bed format and transforms it into a VCF record
 
 
 
