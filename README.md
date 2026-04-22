@@ -3,11 +3,13 @@
 </p>
 
 # inSVert 
-inSVert is a toolkit for the simulation of structural variants and for the insertion of structural variants into a reference genome. 
+inSVert is a software built for the simulation of structural variants and for the insertion of structural variants into a reference genome. 
 
 inSVert main utility lies in benchmarking different read mappers and variant callers against a ground thruth set of structural variants. The software is composed by two modules: simulate & insert. 
 
 ![Alt text](img/benchmarking_workflow.png)
+
+# Usage
 
 ### inSVert simulate
 The first module simulates a custom set of structural variants such as Deletions, Insertions, Inversions, Tandem Duplications and Traslocations according to the user instructions provided in the config.yaml file. The user can choose to simulate variants according to a pareto distribution, which more closely reflects the natural distribution of variants (with fewer long variants and more short variants), or a normal distribution.  
@@ -17,9 +19,16 @@ to simulate structural variants, simply type
 ```
 inSVert simulate config.yaml reference.fasta -o simulated.vcf
 ```
-where the first argument is the path to the config.yaml file and the second one the path to your reference genome in fasta format, you can specify in which file you want your simulated SVs after the -o option. Additionally, you can use the optional --seed argument and set a seed if you need a simulation to be reproducible ex: --seed 123. 
+where the first argument is the path to the config.yaml file and the second one the path to your reference genome in fasta format.
 
+optional arguments:
+```
+-o / --output : path to which you want your output VCF file to be written
 
+--seed : set a seed for the random library for reproducible results
+
+--exclude : provide a .bed file with genomic coordinates to exclude from the simulation (ex. mithocondrial DNA, centromeres, etc...)
+```
 
 ### inSVert insert
 given a VCF file , either produced by *inSVert simulate* or provided by the user, the Structural Variants contained in the file will be programmatically inserted into a specified reference genome in fasta format. Although it may seem trivial, this is by far the most complex step as it requires careful tracking of the inserted variants to avoid indexing problems and to avoid placing variants one on top of the other. 
@@ -38,10 +47,23 @@ to insert Structural Variants from a sorted VCF to a reference genome, simply ty
 inSVert insert reference.fasta simulated.vcf --ploidy 2 --gc 0.41 -o simulated.fasta
 ```
 where the first argument is the path to the reference genome and the second one the path to the VCF chosen by the user; the --ploidy argument is not optional and requires to specify how many copies of the genome to simulate. If you are using inSVert simulate to produce a VCF, it has to match the ploidy argument of the config.yaml. In any case, the genotype string of your variants in the VCF should be informative about the ploidy number you need to insert here.  
-The optional argument --gc allows the user to specify the GC ratio used when generating insertion sequences, in order to make DNA sequences more realistic. The default is set to the human genome GC content (0.41). 
 
 
----
+optional arguments:
+
+```
+-o / --output : path to which you want your output fasta file to be written
+
+--gc : GC ratio used when generating insertion sequences, the default is set to the human GC content (0.41)
+```
+
+
+# Architecture 
+
+![Alt text](img/inSVert_whitebackground.png)
+
+inSVert has a decoupled architecture, designed so that its modules can be used as a standalone bioinformatic utility. 
+
 
 # TO DO
 
@@ -61,16 +83,12 @@ for the final version:
 
 
 
-super optional (based on performance on larger genomes)
-- Replace the current in-memory sorting  with a pure-Python external merge sort that splits the VCF into small, locally sorted temporary files and streams them back together to prevent memory crashes on large genomes without relying on outside tools
-
 - containerize in docker image 
 - write a nextflow benchmarking pipeline 
 - when writing the pipeline, perform multiple simulations with different seeds to be able to build a precision-recall curve
 
 utilities:
-- script that takes a user inputted SV in a simple to understand format like a .bed format and transforms it into a VCF record
-
+- script that takes a user inputted SV in a simple to understand format like a .bed format and transforms it into a VCF record. It should be able to work with something like a tsv or bed format and be able to process multiple lines. 
 
 
 

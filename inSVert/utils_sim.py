@@ -193,6 +193,9 @@ def overlaps_excluded_region(chrom, start, end, excluded_regions:dict):
     if not excluded_regions or chrom not in excluded_regions:
         return False
     
+    if excluded_regions is None:
+        return False
+    
     intervals = excluded_regions[chrom]
     # finding the insertion point in the sorted excluded ranges of the chromosome of interest
     idx = bisect.bisect_right(intervals, (start, end))
@@ -347,5 +350,5 @@ def generate_genotype(ploidy:int, heterozygosity:float) -> str:
         alleles[random_idx] = 1
     
     #format the output as a VCF genotype string (ex. "0/1")
-    return "/".join(map(str,alleles))
+    return "|".join(map(str,alleles))
 

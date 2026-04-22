@@ -21,6 +21,7 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None):
     print(f"Reading index from: {fasta_path}")
     chroms, lengths = utils_sim.read_fai(fasta_path)
 
+    excluded_regions=None
     if excluded_bed is not None:
         print(f"Reading the bed file with excluded genomic regions")
         excluded_regions = utils_sim.parse_bed(excluded_bed)
