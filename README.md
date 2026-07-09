@@ -9,6 +9,19 @@ inSVert main utility lies in benchmarking different read mappers and variant cal
 
 ![Alt text](img/benchmarking_workflow.png)
 
+# Installation
+when installing inSVert, using a virtual enviroment is highly recommended
+
+ensure your packaging tools are updated:
+```bash
+python3 -m pip install --upgrade pip setuptools wheel
+```
+install inSVert with:
+```bash
+git clone https://github.com/thom-99/inSVert
+cd inSVert
+pip install .
+```
 # Usage
 
 ### inSVert simulate
@@ -77,6 +90,7 @@ for the final version:
 - implement an optional argument to allow for the output of a .bed-like file in addition to the VCF for a more human readible variant log output 
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name x
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
+- add a --split-haplotypes flag in the insert command to generate [ploidy] haplotypes in fasta format 
 
 **performance optimizations**
 - multiprocessing for multiple haplotypes as a DEFAULT 
@@ -86,7 +100,7 @@ for the final version:
 - implement inverted duplication (?) 
 - implement reciprocal traslocations (?)
 - To maintain a lightweight VCF and independent modules , keep using symbolic <INS> tags , but add an option to the insert command to dynamically generate and save the actual insertion sequences into a separate auxiliary FASTA file for accurate benchmarking. xx
-
+- add also reverse TRAs
 
 
 - containerize in docker image 
