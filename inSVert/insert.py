@@ -24,8 +24,9 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
     
     print(f'Streaming variants from {vcf_file}...')
     ref = pysam.FastaFile(ref_fasta)
-    vcf = pysam.VariantFile(vcf_file)
-    tra_cache = utils_ins.prefetch_translocations(vcf_file, ref_fasta)
+    sorted_vcf_path = utils_ins.prepare_vcf(vcf_file) #vcf preparation ensuring it is properly sorted
+    vcf = pysam.VariantFile(sorted_vcf_path)
+    tra_cache = utils_ins.prefetch_translocations(sorted_vcf_path, ref_fasta)
     
     #count tot. variants and multiply by ploidy for rich progress bar
     total_variants = sum(1 for _ in vcf)

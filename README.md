@@ -80,6 +80,8 @@ inSVert has a decoupled architecture, designed so that its modules can be used a
 
 # TO DO
 
+- add a function to check the vality of a VCF file with standard checks as well as specific checks (chr names matching with fasta, origin fasta matching insertion fasta), in the validation module 
+- add functions to process a VCF file by compressing it and indexing it as required for the insertion logic, in the utils_ins module 
 
 for the final version:
 

@@ -1,4 +1,4 @@
-from .tests import input_files_tests
+from . import input_validation
 from . import simulate
 from . import insert
 
@@ -66,7 +66,18 @@ def simulate_cmd(config, reference, output, seed, exclude):
     
       $ inSVert simulate my_config.yaml hg38.fasta --seed 123 -o my_variants.vcf
     """
+    # input validation
+    console.print("[yellow]Validating input files...[/yellow]")
+    try:
+        input_validation.validate_fasta(reference)
+        input_validation.validate_bed(exclude, reference)
+        console.print("[bold green]✓ Inputs verified successfully![/bold green]")
 
+    except Exception as e:
+        console.print(f"\n[bold red]Validation Error:[/bold red] {e}")
+        raise click.Abort
+    
+    # execution
     # 1. Header
     console.print(Panel(f"Running Simulation with [yellow]{config}[/yellow]", title="[bold cyan]inSVert Simulate[/bold cyan]", border_style="cyan"))
 
@@ -125,15 +136,24 @@ def insert_cmd(reference, vcf, ploidy, gc, output):
     
       $ inSVert insert hg38.fasta variants.vcf --ploidy 2 --gc 0.45 -o modified_genome.fasta
     """
+
+    # input validation
+    try:
+        input_validation.validate_fasta(reference)
+        input_validation.validate_vcf(vcf,reference)
+    
+    except Exception as e:
+        console.print(f"\n[bold red]Validation Error:[/bold red] {e}")
+        raise click.Abort()
+
+    # execution
     # 1. Header
     console.print(Panel(f"Inserting Variants from [yellow]{vcf}[/yellow]", title="[bold green]inSVert Insert[/bold green]", border_style="green"))    
-
-    valid_vcf = input_files_tests.prepare_vcf(vcf)
 
     # 2. Execution with Spinner
     with console.status(f"[bold green]Processing Genome (GC={gc})...[/bold green]", spinner="dots"):
             try:
-                insert.run(gc, reference, valid_vcf, ploidy, output)
+                insert.run(gc, reference, vcf, ploidy, output)
             except Exception as e:
                 console.print(f"[bold red]Error:[/bold red] {e}")
                 raise click.Abort()
