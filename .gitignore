@@ -1,3 +1,4 @@
 data/
 inSVert/__pycache__
 .aider*
+.vscode/
