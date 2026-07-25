@@ -9,6 +9,7 @@ import datetime
 import bisect
 import math
 import random
+from . import VariantObjects
 
 
 
@@ -302,7 +303,7 @@ Now haplotype-aware: only checks the haplotypes where the variant is placed.
 """
 def overlaps(chrom, start, end, genotype_str, sv_positions: dict):
 
-    alleles = genotype_str.split('/')
+    alleles = genotype_str.split('|')
 
     for hap_idx, allele in enumerate(alleles):
         if allele == "1": #check only haplotypes that carry the variant
@@ -334,11 +335,10 @@ def overlaps(chrom, start, end, genotype_str, sv_positions: dict):
     return False
 
 
-
-'''
-Generates a genotype string (e.g., '0/1/0') based on ploidy and heterozygosity.
+"""
+Generates a genotype string (e.g., '0|1|0') with PHASED variants based on ploidy and heterozygosity.
 Ensures that at least one allele is '1'
-'''
+"""
 def generate_genotype(ploidy:int, heterozygosity:float) -> str:
 
     #randomly assign alleles based on heterozygosity prob
@@ -352,3 +352,97 @@ def generate_genotype(ploidy:int, heterozygosity:float) -> str:
     #format the output as a VCF genotype string (ex. "0/1")
     return "|".join(map(str,alleles))
 
+
+"""
+Parses genotype and inserts SV coordinates into the tracker.
+"""
+def track_sv(sv_positions, chrom, start, end, genotype_str):
+    alleles = genotype_str.split('|') # Or '|' depending on generate_genotype output
+    for hap_idx, allele in enumerate(alleles):
+        if allele == "1":
+            import bisect
+            bisect.insort(sv_positions[chrom][hap_idx], (start, end))
+
+
+
+### BNDs HANDLING - HELPER FUNCTIONS FOR THE MAIN LOOP ###
+
+
+def find_valid_tra_coords(chroms, lengths, sv_length, gt, sv_positions, excluded_regions):
+    """
+    Performs a single attempt to generate and validate TRA coordinates.
+    Returns (chrom_src, pos_src, chrom_dst, pos_dst) if valid, else None.
+    """
+    chrom_src, len_src = select_chr(chroms, lengths)
+    pos_src = select_pos(len_src)
+    
+    chrom_dst, len_dst = select_chr(chroms, lengths)
+    pos_dst = select_pos(len_dst)
+    
+    # 1. Check boundaries
+    if pos_src + sv_length > len_src or pos_dst + 1 > len_dst:
+        return None
+        
+    # 2. Check overlaps
+    if (overlaps(chrom_src, pos_src, pos_src + sv_length, gt, sv_positions) or
+        overlaps(chrom_dst, pos_dst, pos_dst + 1, gt, sv_positions) or
+        overlaps_excluded_region(chrom_src, pos_src, pos_src + sv_length, excluded_regions) or
+        overlaps_excluded_region(chrom_dst, pos_dst, pos_dst + 1, excluded_regions)):
+        return None
+        
+    return chrom_src, pos_src, chrom_dst, pos_dst
+
+
+
+def fetch_ref_base(chrom, pos, ref_fasta):
+    """
+    Fetches the true biological reference base at a 1-indexed VCF position.
+    """
+    # pysam is 0-indexed, so we fetch from (pos - 1) to (pos)
+    return ref_fasta.fetch(chrom, pos - 1, pos)
+
+
+def generate_tra_bnds(svtype, chrom_src, pos_src, chrom_dst, pos_dst, length, event_id, gt, ref_fasta):
+    """
+    Builds the Breakend objects for TRA_CUT or TRA_COPY, using the true reference bases.
+    Returns a list of Breakend objects.
+    """
+    # Fetch true bases using the helper
+    ref_dst = fetch_ref_base(chrom_dst, pos_dst, ref_fasta)
+    ref_src_start = fetch_ref_base(chrom_src, pos_src + 1, ref_fasta)
+    ref_src_end = fetch_ref_base(chrom_src, pos_src + length, ref_fasta)
+    
+    bnds = []
+    
+    # 1. PASTE START
+    bnds.append(VariantObjects.Breakend(
+        chrom_dst, pos_dst, f"{event_id}.P1", gt, f"{event_id}.P2", event_id, 
+        f"{ref_dst}[{chrom_src}:{pos_src + 1}[", ref_dst))
+        
+    bnds.append(VariantObjects.Breakend(
+        chrom_src, pos_src + 1, f"{event_id}.P2", gt, f"{event_id}.P1", event_id, 
+        f"]{chrom_dst}:{pos_dst}]{ref_src_start}", ref_src_start))
+        
+    # 2. PASTE END
+    bnds.append(VariantObjects.Breakend(
+        chrom_src, pos_src + length, f"{event_id}.P3", gt, f"{event_id}.P4", event_id, 
+        f"{ref_src_end}[{chrom_dst}:{pos_dst + 1}[", ref_src_end))
+        
+    bnds.append(VariantObjects.Breakend(
+        chrom_dst, pos_dst + 1, f"{event_id}.P4", gt, f"{event_id}.P3", event_id, 
+        f"]{chrom_src}:{pos_src + length}]{ref_dst}", ref_dst))
+        
+    if svtype == "TRA_CUT":
+        # 3. HEAL THE SOURCE
+        ref_src_heal_start = fetch_ref_base(chrom_src, pos_src, ref_fasta)
+        ref_src_heal_end = fetch_ref_base(chrom_src, pos_src + length + 1, ref_fasta)
+        
+        bnds.append(VariantObjects.Breakend(
+            chrom_src, pos_src, f"{event_id}.H1", gt, f"{event_id}.H2", event_id, 
+            f"{ref_src_heal_start}[{chrom_src}:{pos_src + length + 1}[", ref_src_heal_start))
+            
+        bnds.append(VariantObjects.Breakend(
+            chrom_src, pos_src + length + 1, f"{event_id}.H2", gt, f"{event_id}.H1", event_id, 
+            f"]{chrom_src}:{pos_src}]{ref_src_heal_end}", ref_src_heal_end))
+            
+    return bnds

@@ -6,16 +6,17 @@ Structural Variant Objects used to build a VCF file
 
 class StructuralVariant(ABC):
     
-    def __init__(self, chrom:str, pos:int, length:int, id:str, genotype:str):
+    def __init__(self, chrom:str, pos:int, length:int, id:str, genotype:str, ref_base:str):
         self.chrom = chrom
         self.pos = pos
         self.length = length
         self.id = id 
         self.genotype = genotype
+        self.ref = ref_base
         self.ref = "N"
         self.qual = "."
         self.filter = "PASS"
-
+        
     @abstractmethod
     def get_alt(self) -> str:
         #return the alt field
@@ -41,8 +42,8 @@ class StructuralVariant(ABC):
 class Insertion(StructuralVariant):
 #implement also sequence as an optional argument to pass tk get_alt
 
-    def __init__(self, chrom, pos, length, id, genotype):
-        super().__init__(chrom, pos, length, id, genotype)
+    def __init__(self, chrom, pos, length, id, genotype, ref_base):
+        super().__init__(chrom, pos, length, id, genotype, ref_base)
 
     def get_alt(self):
         return "<INS>" #for now, I'll keep the symbolic alt
@@ -58,10 +59,10 @@ class Insertion(StructuralVariant):
 
 class Deletion(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id, genotype):
+    def __init__(self, chrom, pos, length, id, genotype, ref_base):
         if length>= 0:
             raise ValueError(f"Deletion length must be negative, got {length} instead")
-        super().__init__(chrom, pos, length, id, genotype)
+        super().__init__(chrom, pos, length, id, genotype, ref_base)
 
     def get_alt(self):
         return "<DEL>"
@@ -77,8 +78,8 @@ class Deletion(StructuralVariant):
 
 class Inversion(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id, genotype):
-        super().__init__(chrom, pos, length, id, genotype)
+    def __init__(self, chrom, pos, length, id, genotype, ref_base):
+        super().__init__(chrom, pos, length, id, genotype, ref_base)
 
     def get_alt(self):
         return "<INV>"
@@ -95,8 +96,8 @@ class Inversion(StructuralVariant):
 
 class Duplication(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id, genotype, copy_number:int):
-        super().__init__(chrom, pos, length, id, genotype)
+    def __init__(self, chrom, pos, length, id, genotype, ref_base, copy_number:int):
+        super().__init__(chrom, pos, length, id, genotype, ref_base)
         self.copy_number = copy_number
 
     def get_alt(self):
@@ -121,9 +122,9 @@ class Breakend(StructuralVariant):
     """
     Represents a single BND record in VCF 4.2.
     """
-    def __init__(self, chrom, pos, id, genotype, mate_id, event_id, alt_string):
+    def __init__(self, chrom, pos, id, genotype, mate_id, event_id, alt_string, ref_base):
         # Length is typically 0 or 1 for BNDs as they represent a single point junction
-        super().__init__(chrom, pos, 0, id, genotype)
+        super().__init__(chrom, pos, 0, id, genotype, ref_base)
         self.mate_id = mate_id
         self.event_id = event_id
         self.alt_string = alt_string # The bracketed ALT string (e.g., N[chr2:5000[)

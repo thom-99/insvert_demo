@@ -1,0 +1,34 @@
+# the 4 brakets orientations in BNDs explained 
+
+the ALT string of breakends is constructed with 
+- t : thr string that replaces the referece base at the current position
+- p : the position of the mate breakend (formatted as chrom:pos) 
+- [ or ] : indicate the direction of the joined sequence
+
+example:
+current BND --> chr1:500 
+- ref base = A
+- t = A
+- p = chr2:1000
+- sequence at chr2 --> ( ... T T T (bases left of p) | C (1000) | G G G ... )
+
+
+1. t[p[ : forward extending right 
+- the piece extending to the right of p is joined after T 
+- ALT = A[chr2:1000[
+- sequence = ( A C G G G ... ) 
+
+2. t]p[ : reverse extending left 
+- the reverse-complemented piece extending to the left of p is joined after t 
+- ALT = A]chr2:1000[
+- sequene = A ... T T T C -- revcomp --> ( A G A A A ... )
+
+3. ]p]t : forward extending left 
+- the piece extending to the left of p is joined before t
+- ALT = ]chr2:1000]A 
+- sequence = ( ... T T T C A )
+
+4. [p[t : reverse extending right
+
+- ALT = [chr2:100[A
+- sequence = C G G G ... A -- revcomp --> ... ( C C C G A ) 

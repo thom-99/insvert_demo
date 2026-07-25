@@ -119,7 +119,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
                                 processed_sources.add(event_id)
                                 continue
 
-                            # ACTION: the 'PASTE' i.e. source of the cut&paste or copy&paste TRAs
+                            # ACTION: the 'PASTE' i.e. sink of the cut&paste or copy&paste TRAs
                             ins_job = tra_cache["insertions"].get(chrom, {}).get(var.pos)
                             if ins_job and event_id not in processed_sinks:
                                 seq, _ = ins_job

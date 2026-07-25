@@ -2,6 +2,7 @@
 UTILITIES FOR THE INSERT MODULE OF INSVERT
 (Streaming Version)
 '''
+import re 
 import os
 import random
 import pysam
@@ -336,3 +337,51 @@ def prepare_vcf(vcf_path):
         if os.path.exists(sorted_vcf_path):
             os.remove(sorted_vcf_path)
         raise RuntimeError(f"Failed to prepare VCF: {e}")
+
+
+
+
+
+
+
+### FUNCTION TO PARSE ORIENTATION OF BNDs IN A VCF using regex ###
+
+
+def parse_bnd_orientation(alt_string):
+    """
+    Parses a VCF 4.2 BND ALT string to extract strand orientation 
+    and attachment position.
+
+    Args:
+        alt_string (str): The ALT string from the VCF record.
+
+    Returns:
+        tuple: (needs_rev_comp: bool, attach_after: bool)
+               Returns (None, None) if the string is malformed or not a BND.
+    """
+    # Uses [^\]\[]+ to match any sequence content before/after brackets
+    pattern = re.compile(r"^([^\]\[]+)?([\]\[])([^:]+):(\d+)([\]\[])([^\]\[]+)?$")
+    match = pattern.match(alt_string)
+
+    if not match:
+        return None, None
+
+    seq_before, bracket_1, _, _, bracket_2, seq_after = match.groups()
+
+    # Case 1: t[p[ -> Forward strand, attached AFTER base t
+    if seq_before and bracket_1 == '[' and bracket_2 == '[':
+        return False, True
+
+    # Case 2: t]p] -> Reverse strand, attached AFTER base t
+    elif seq_before and bracket_1 == ']' and bracket_2 == ']':
+        return True, True
+
+    # Case 3: ]p]t -> Forward strand, attached BEFORE base t
+    elif seq_after and bracket_1 == ']' and bracket_2 == ']':
+        return False, False
+
+    # Case 4: [p[t -> Reverse strand, attached BEFORE base t
+    elif seq_after and bracket_1 == '[' and bracket_2 == '[':
+        return True, False
+
+    return None, None  # Malformed brackets (e.g., t[p])

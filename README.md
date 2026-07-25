@@ -80,15 +80,11 @@ inSVert has a decoupled architecture, designed so that its modules can be used a
 
 # TO DO
 
-- add a function to check the vality of a VCF file with standard checks as well as specific checks (chr names matching with fasta, origin fasta matching insertion fasta), in the validation module 
-- add functions to process a VCF file by compressing it and indexing it as required for the insertion logic, in the utils_ins module 
 
 for the final version:
 
 **quality of life features**
 
-- add the option in the simulate.py module to accept a .bed file with some genomic coordinates to exclude from the simulation.
-    throw a warning it the chrom names of the .bed and of the .fasta.fai do not match -> -bed will get ignored
 - implement an optional argument to allow for the output of a .bed-like file in addition to the VCF for a more human readible variant log output 
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name x
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
@@ -103,6 +99,10 @@ for the final version:
 - implement reciprocal traslocations (?)
 - To maintain a lightweight VCF and independent modules , keep using symbolic <INS> tags , but add an option to the insert command to dynamically generate and save the actual insertion sequences into a separate auxiliary FASTA file for accurate benchmarking. xx
 - add also reverse TRAs
+- add logic to parse all 4 BND orientation and implement them correctly in the reference 
+- add logic to simulate also inverted duplications (revcomp) - use a parameter in the config: forward/inverted ratio
+- add logic to build BNDs with the reference base and allow the insert module to apply BNDs with the reference 
+- add Exception to ignore the UNPHASED variants in a VCF file (think more about this) or fallback to randomness?
 
 
 - containerize in docker image 
@@ -111,7 +111,6 @@ for the final version:
 
 utilities:
 - script that takes a user inputted SV in a simple to understand format like a .bed format and transforms it into a VCF record. It should be able to work with something like a tsv or bed format and be able to process multiple lines. 
-
 
 
 
