@@ -83,34 +83,33 @@ inSVert has a decoupled architecture, designed so that its modules can be used a
 
 for the final version:
 
-**quality of life features**
+
+**main features**
+- implement reciprocal traslocations a.k.a recombinations (?)
+- add logic to parse all 4 BND orientation and implement them correctly in the reference 
+- add logic to simulate also inverted TRA/DUP (revcomp) - use a parameter in the config: forward/inverted ratio
+- add Exception to ignore the UNPHASED variants in a VCF file (think more about this) or fallback to randomness?
+
+
+**quality of life**
 
 - implement an optional argument to allow for the output of a .bed-like file in addition to the VCF for a more human readible variant log output 
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name x
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
 - add a --split-haplotypes flag in the insert command to generate [ploidy] haplotypes in fasta format 
+- add an option to insert to dynamically generate and save the INS sequences into a separate auxiliary FASTA file for accurate benchmarking. 
 
 **performance optimizations**
 - multiprocessing for multiple haplotypes as a DEFAULT 
 
 
-**main features**
-- implement inverted duplication (?) 
-- implement reciprocal traslocations (?)
-- To maintain a lightweight VCF and independent modules , keep using symbolic <INS> tags , but add an option to the insert command to dynamically generate and save the actual insertion sequences into a separate auxiliary FASTA file for accurate benchmarking. xx
-- add also reverse TRAs
-- add logic to parse all 4 BND orientation and implement them correctly in the reference 
-- add logic to simulate also inverted duplications (revcomp) - use a parameter in the config: forward/inverted ratio
-- add logic to build BNDs with the reference base and allow the insert module to apply BNDs with the reference 
-- add Exception to ignore the UNPHASED variants in a VCF file (think more about this) or fallback to randomness?
-
-
+**extras**
 - containerize in docker image 
 - write a nextflow benchmarking pipeline 
 - when writing the pipeline, perform multiple simulations with different seeds to be able to build a precision-recall curve
 
 utilities:
-- script that takes a user inputted SV in a simple to understand format like a .bed format and transforms it into a VCF record. It should be able to work with something like a tsv or bed format and be able to process multiple lines. 
+- web app that takes a user inputted SV in a simple to understand format like a .bed format and transforms it into a VCF record. It should be able to work with something like a tsv or bed format and be able to process multiple lines. 
 
 
 
