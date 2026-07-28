@@ -311,7 +311,7 @@ def overlaps(chrom, start, end, genotype_str, sv_positions: dict):
             intervals = sv_positions[chrom][hap_idx]
         
             if not intervals: # base case, empty list == no overlaps 
-                return False
+                continue
 
             # 1) Binary Search to find the "Insertion Point" 
             # We ask: "If I were to insert this new variant into the list while keeping it sorted, at which index would it go?"

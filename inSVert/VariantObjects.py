@@ -13,7 +13,6 @@ class StructuralVariant(ABC):
         self.id = id 
         self.genotype = genotype
         self.ref = ref_base
-        self.ref = "N"
         self.qual = "."
         self.filter = "PASS"
         
@@ -96,7 +95,7 @@ class Inversion(StructuralVariant):
 
 class Duplication(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id, genotype, ref_base, copy_number:int):
+    def __init__(self, chrom, pos, length, id, genotype, ref_base,copy_number:int):
         super().__init__(chrom, pos, length, id, genotype, ref_base)
         self.copy_number = copy_number
 
