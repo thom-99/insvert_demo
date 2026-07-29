@@ -88,8 +88,8 @@ for the final version:
 - implement reciprocal traslocations a.k.a recombinations (?)
 - add logic to parse all 4 BND orientation and implement them correctly in the reference 
 - add logic to simulate also inverted TRA/DUP (revcomp) - use a parameter in the config: forward/inverted ratio
+- rework the is_valid_tra() function to use brakets orientations rather than positions to determine source/sink chroms (tied to above). ISSUE. 
 - add Exception to ignore the UNPHASED variants in a VCF file (think more about this) or fallback to randomness?
-
 
 **quality of life**
 
@@ -100,7 +100,8 @@ for the final version:
 - add an option to insert to dynamically generate and save the INS sequences into a separate auxiliary FASTA file for accurate benchmarking. 
 
 **performance optimizations**
-- multiprocessing for multiple haplotypes as a DEFAULT 
+- multiprocessing for multiple haplotypes as a DEFAULT (speed)
+- in the prefetch_tra function, instead of storing the entire sequence store just the start and end positions and let pysam lazy load the sequence later (reduce memory usage)
 
 
 **extras**
