@@ -92,10 +92,29 @@ def apply_duplication(ref_file, chrom: str, start: int, length: int, copy_number
 
 def is_valid_tra(event_id, adjacencies):
     """
-    Rigorously validates the biological structure of a translocation event.
-    Supports both Inter-chromosomal and Intra-chromosomal (transposition) events.
+    Rigorously validates the biological structure of a translocation event
+    using a mate-pairing graph approach.
     
-    Returns: (type, source_chrom, source_range, sink_chrom, sink_pos) or None
+    Supports both Inter-chromosomal and Intra-chromosomal (transposition) events:
+    - TRA_COPY: Copy & Paste / Interspersed Duplication (2 adjacencies / 4 BNDs)
+    - TRA_CUT: Cut & Paste / Transposition (3 adjacencies / 6 BNDs)
+
+    Args:
+        event_id (str): The ID of the translocation event.
+        adjacencies (list): A list of tuples [(rec1, mate1), (rec2, mate2), ...]
+                            representing paired BND records connected by MATEID.
+
+    Returns:
+        tuple or None: 
+            (tra_type, source_chrom, (s_start_0idx, s_end_0idx), sink_chrom, sink_pos_1idx, del_trigger_pos_1idx)
+            Where:
+            - tra_type: "TRA_COPY" or "TRA_CUT"
+            - source_chrom: Chromosome of the translocated source segment
+            - (s_start_0idx, s_end_0idx): 0-indexed half-open slice [start, end) for ref.fetch()
+            - sink_chrom: Chromosome of the insertion target site
+            - sink_pos_1idx: 1-indexed insertion position on sink chromosome
+            - del_trigger_pos_1idx: 1-indexed VCF position of the HEAL record (H1) that triggers deletion skip (None for TRA_COPY)
+            - is_inverted (bool): True if the ALT string specifies reverse-strand joining  
     """
     count = len(adjacencies)
     
@@ -103,106 +122,154 @@ def is_valid_tra(event_id, adjacencies):
     # CATEGORY 1: COPY & PASTE (4 VCF lines / 2 Adjacencies)
     # -------------------------------------------------------------------------
     if count == 2:
-        # Step 1: Group positions by chromosome
-        chrom_map = defaultdict(list)
-        for r, m in adjacencies:
-            chrom_map[r.chrom].append(r.pos)
-            chrom_map[m.chrom].append(m.pos)
-            
-        # Identify Source vs Sink
-        if len(chrom_map) == 2:
-            # INTER-chromosomal logic (existing)
-            source_chrom = next(c for c, p in chrom_map.items() if len(set(p)) > 1)
-            sink_chrom = next(c for c in chrom_map if c != source_chrom)
-            source_pos = sorted(list(set(chrom_map[source_chrom])))
-            sink_pos = min(chrom_map[sink_chrom])
+        (r1, m1), (r2, m2) = adjacencies
         
-        elif len(chrom_map) == 1:
-            # INTRA-chromosomal logic
-            # Heuristic: The two positions closest to each other (dist 1) are the Sink.
-            # The other two positions define the Source segment.
-            source_chrom = sink_chrom = list(chrom_map.keys())[0]
-            all_pos = sorted(chrom_map[source_chrom])
-            
-            # Find which pair in the sorted list are adjacent (the sink join point)
-            found_sink = False
-            for i in range(len(all_pos) - 1):
-                if all_pos[i+1] - all_pos[i] == 1:
-                    sink_pos = all_pos[i]
-                    # The other two positions are the source
-                    source_pos = [p for p in all_pos if p != all_pos[i] and p != all_pos[i+1]]
-                    found_sink = True
+        # CRITICAL TOPOLOGY CHECK:
+        # In a 2-adjacency translocation event, each adjacency (r, m) has one breakend
+        # on the source side and one breakend on the sink side.
+        # Therefore, grouping the records across the two adjacencies yields two candidate sides:
+        # Candidate 1: Side A = (r1, r2), Side B = (m1, m2)
+        # Candidate 2: Side A = (r1, m2), Side B = (m1, r2)
+        candidates = [
+            ([r1, r2], [m1, m2]),
+            ([r1, m2], [m1, r2])
+        ]
+        
+        valid_pair = None
+        for side1, side2 in candidates:
+            # Both breakends on a given side must reside on the same chromosome
+            if side1[0].chrom == side1[1].chrom and side2[0].chrom == side2[1].chrom:
+                d1 = abs(side1[0].pos - side1[1].pos)
+                d2 = abs(side2[0].pos - side2[1].pos)
+                
+                # Distinguish SOURCE vs SINK:
+                # - SOURCE side: P2 and P3 bound the copied segment (distance > 1 bp)
+                # - SINK side: P1 and P4 bound the insertion site (distance <= 1 bp)
+                if (d1 > 1 and d2 <= 1) or (d2 > 1 and d1 <= 1):
+                    valid_pair = (side1, side2, d1, d2)
                     break
-            if not found_sink: return None
-        else:
+                    
+        if not valid_pair:
             return None
-        
-        # Rigorous Logic: Source must be > 1bp
-        if source_pos[1] - source_pos[0] <= 1: 
-            return None 
             
-        return ("TRA_COPY", source_chrom, (source_pos[0], source_pos[1]), 
-                sink_chrom, sink_pos)
+        side1, side2, d1, d2 = valid_pair
+        if d1 > d2:
+            source_bnds, sink_bnds = side1, side2
+        else:
+            source_bnds, sink_bnds = side2, side1
+            
+        source_chrom = source_bnds[0].chrom
+        s_min = min(source_bnds[0].pos, source_bnds[1].pos)
+        s_max = max(source_bnds[0].pos, source_bnds[1].pos)
+        
+        # Convert to 0-indexed half-open coordinates [start, end) for pysam ref.fetch:
+        # P2 is at s_min (1-indexed start base of segment). Index is s_min - 1.
+        # P3 is at s_max (1-indexed end base of segment). Half-open end index is s_max.
+        s_start_0idx = s_min - 1
+        s_end_0idx = s_max
+        
+        sink_chrom = sink_bnds[0].chrom
+        
+        # Sort sink_bnds by position to guarantee index 0 is the minimum position
+        sink_bnds.sort(key=lambda b: b.pos)
+        sink_pos = sink_bnds[0].pos
+
+        # Check ALT bracket orientation for reverse-strand joining and attachment position
+        is_inverted = False
+        attach_after = True
+        if sink_bnds[0].alts:
+            rev, attach = parse_bnd_orientation(sink_bnds[0].alts[0])
+            if rev is not None:
+                is_inverted = rev
+                attach_after = attach
+        
+        return ("TRA_COPY", source_chrom, (s_start_0idx, s_end_0idx), sink_chrom, sink_pos, None, is_inverted, attach_after)
 
     # -------------------------------------------------------------------------
     # CATEGORY 2: CUT & PASTE (6 VCF lines / 3 Adjacencies)
     # -------------------------------------------------------------------------
     elif count == 3:
-        # Step 1: Identify the 'HEAL' adjacency
-        # we can consider the HEAL adj as the one that encompasses inside another adj, the COPY/SOURCE one
-
+        # CRITICAL TOPOLOGY CHECK:
+        # The HEAL adjacency (H1, H2) bridges the excised segment on source_chrom.
+        # Therefore:
+        # 1. H1 and H2 MUST be intrachromosomal (r.chrom == m.chrom).
+        # 2. The interval (h_min, h_max) MUST strictly enclose the 2 source breakends
+        #    belonging to the PASTE adjacencies, while excluding the sink breakends.
+        
         heal_adj = None
-        all_bnds = []
-        for r, m in adjacencies:
-            all_bnds.extend([(r.chrom, r.pos), (m.chrom, m.pos)])
-
-        for r, m in adjacencies:
-            # a heal adj must be interchromosomal
-            if r.chrom == m.chrom:
-                # find all the other breakpoints present on this same chrom
-                other_bnds_on_this_chrom = [pos for chrom, pos in all_bnds if chrom == r.chrom and pos != r.pos and pos != m.pos]
-                start, end = min(r.pos, m.pos), max(r.pos, m.pos)
+        for i, (r, m) in enumerate(adjacencies):
+            if r.chrom != m.chrom:
+                continue
+            
+            h_min, h_max = min(r.pos, m.pos), max(r.pos, m.pos)
+            paste_adjs = [adj for j, adj in enumerate(adjacencies) if j != i]
+            
+            # Count breakends in paste_adjs that fall inside vs outside the HEAL interval
+            inside_bnds = []
+            outside_bnds = []
+            for pr, pm in paste_adjs:
+                for pb in (pr, pm):
+                    if pb.chrom == r.chrom and h_min < pb.pos < h_max:
+                        inside_bnds.append(pb)
+                    else:
+                        outside_bnds.append(pb)
+                        
+            # In a valid TRA_CUT, exactly 2 paste breakends lie inside the HEAL interval.
+            # Additionally, the 2 outside breakends must be adjacent (distance <= 1) 
+            # because they represent the single insertion point (sink).
+            if len(inside_bnds) == 2 and len(outside_bnds) == 2:
+                if outside_bnds[0].chrom == outside_bnds[1].chrom:
+                    if abs(outside_bnds[0].pos - outside_bnds[1].pos) <= 1:
+                        heal_adj = (r, m)
+                        valid_sink_bnds = outside_bnds
+                        # Note: For intra-chromosomal transpositions, there are 2 mathematically 
+                        # identical interpretations (cut B paste after C == cut C paste before B).
+                        # We just take the first one we find that is valid.
+                        break
                 
-                # TOPOLOGY CHECK !!!
-                # if this adjacency spans (start to end) any other breakpoints it it the HEAL
-                # the 'len==0' conditions covers the Inter-chromosomal case in which only the HEAL adj exists on the source chrom
-                if any(start < p < end for p in other_bnds_on_this_chrom) or len(other_bnds_on_this_chrom) == 0:
-                    heal_adj = (r, m)
-                    break
-        
-        if not heal_adj: return None # if no HEAL adjacency is found, the TRA cannot be characterized
-        
+        if not heal_adj:
+            return None
+            
         source_chrom = heal_adj[0].chrom
-        source_pos = sorted([heal_adj[0].pos, heal_adj[1].pos])
+        h_min = min(heal_adj[0].pos, heal_adj[1].pos)
+        h_max = max(heal_adj[0].pos, heal_adj[1].pos)
         
-        # Rigorous Logic: Source must be > 1bp
-        if source_pos[1] - source_pos[0] - 1 <= 1: 
-            return None 
+        # Excised source segment in 0-indexed half-open coordinates [start, end):
+        # H1 is at h_min (1-indexed base before cut). Index is h_min.
+        # H2 is at h_max (1-indexed base after cut). Half-open end index is h_max - 1.
+        s_start_0idx = h_min
+        s_end_0idx = h_max - 1
+        del_trigger_pos = h_min  # 1-indexed VCF position of H1 record triggering deletion skip
+        
+        # Find sink location from paste adjacencies (breakends outside the HEAL interval or on another chrom)
+        paste_adjs = [a for a in adjacencies if a != heal_adj]
+        sink_bnds = []
+        for pr, pm in paste_adjs:
+            for pb in (pr, pm):
+                if pb.chrom != source_chrom or pb.pos < h_min or pb.pos > h_max:
+                    sink_bnds.append(pb)
+                    
+        if not sink_bnds:
+            return None
+            
+        sink_chrom = sink_bnds[0].chrom
+        
+        # Sort sink_bnds by position to guarantee index 0 is the minimum position
+        sink_bnds.sort(key=lambda b: b.pos)
+        sink_pos = sink_bnds[0].pos
 
-        # Step 2: Find the Sink from 'PASTE' adjacencies
-        # the remaining 2 adj are the 'PASTE' junctions, they connect the segment ends to a sinlge insertion point
-        paste_adjs = [a for a in adjacencies if a[0].id != heal_adj[0].id and a[0].id != heal_adj[1].id]
+        # Check ALT bracket orientation for reverse-strand joining and attachment position
+        is_inverted = False
+        attach_after = True
+        if sink_bnds[0].alts:
+            rev, attach = parse_bnd_orientation(sink_bnds[0].alts[0])
+            if rev is not None:
+                is_inverted = rev
+                attach_after = attach
         
-        
-        sink_chrom = sink_pos = None
-        for r, m in paste_adjs:
-            for bnd in [r, m]:
-                # the sink is the side of the junction that is NOT the segment
-                # it is identifiable either by being on a different chrom OR by being outside of the range of the heal
-                if bnd.chrom != source_chrom or (bnd.pos < source_pos[0] or bnd.pos > source_pos[1]):
-                    sink_chrom, sink_pos = bnd.chrom, bnd.pos
-                    break
-            if sink_chrom: break #stop once the destination is found
-
-        if not sink_chrom: return None
-        
-        return ("TRA_CUT", source_chrom, (source_pos[0], source_pos[1]), 
-                sink_chrom, sink_pos)
+        return ("TRA_CUT", source_chrom, (s_start_0idx, s_end_0idx), sink_chrom, sink_pos, del_trigger_pos, is_inverted, attach_after)
 
     return None
-
-
-
 
 
 def prefetch_translocations(vcf_path, ref_path):
@@ -233,9 +300,19 @@ def prefetch_translocations(vcf_path, ref_path):
     vcf = pysam.VariantFile(vcf_path)
     ref = pysam.FastaFile(ref_path)
     events = defaultdict(list)
+    orphan_bnds = 0
     for var in vcf:
         if var.info.get("SVTYPE") == "BND":
-            events[var.info.get("EVENT")].append(var)
+            event_tag = var.info.get("EVENT")
+            if event_tag is None:
+                orphan_bnds += 1
+                continue
+            events[event_tag].append(var)
+    
+    if orphan_bnds > 0:
+        print(f"WARNING: {orphan_bnds} BND record(s) found without EVENT tags. "
+              f"Translocation reconstruction requires EVENT grouping. "
+              f"Skipping these BND records.")
 
     # Actions keyed by [chrom][pos] = (type, data, event_id)
     tra_map = {"deletions": defaultdict(dict), "insertions": defaultdict(dict)}
@@ -251,17 +328,19 @@ def prefetch_translocations(vcf_path, ref_path):
                     adjacencies.append((r, mate))
                     seen.update([r.id, mate.id])
         
-        # check if the traslocation is valid and categorize it
+        # Check if the translocation is valid and categorize it
         res = is_valid_tra(event_id, adjacencies)
         if not res: continue
         
-        tra_type, src_chr, (s_start, s_end), snk_chr, snk_pos = res
-        sequence = ref.fetch(src_chr, s_start, s_end - 1)
+        tra_type, src_chr, (s_start, s_end), snk_chr, snk_pos, del_pos, is_inverted, attach_after = res
+        sequence = ref.fetch(src_chr, s_start, s_end)
+        if is_inverted:
+            sequence = reverse_complement(sequence)
 
-        if tra_type == "TRA_CUT":
-            tra_map["deletions"][src_chr][s_start] = (len(sequence), event_id)
+        if tra_type == "TRA_CUT" and del_pos is not None:
+            tra_map["deletions"][src_chr][del_pos] = (len(sequence), event_id)
         
-        tra_map["insertions"][snk_chr][snk_pos] = (sequence, event_id)
+        tra_map["insertions"][snk_chr][snk_pos] = (sequence, attach_after, event_id)
 
     vcf.close(); ref.close()
     return tra_map

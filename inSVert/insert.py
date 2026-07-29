@@ -89,6 +89,11 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
                             if svlen is None: svlen = var.stop - var.start
                             svlen = abs(svlen)
 
+                            # Write the padding base before standard SVs
+                            if ref_pos == start:
+                                writer.write(ref.fetch(chrom, start, start + 1))
+                                ref_pos = start + 1
+
                             # VARIANT PROCESSING
                             if svtype == 'INS':
                                 ins_seq = utils_ins.generate_seq(svlen, gc_content)
@@ -99,13 +104,13 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
                                 ref_pos = utils_ins.apply_deletion(ref_pos, svlen)
                                 
                             elif svtype == 'INV':
-                                ref_pos = utils_ins.apply_inversion(ref, chrom, start, svlen, writer)
+                                ref_pos = utils_ins.apply_inversion(ref, chrom, ref_pos, svlen, writer)
                                     
                             elif svtype == 'DUP':
                                 sample_name = list(var.samples.keys())[0] if var.samples else None
                                 cn = var.samples[sample_name]['CN'] if sample_name else 2
                                     
-                                ref_pos = utils_ins.apply_duplication(ref, chrom, start, svlen, cn, writer)
+                                ref_pos = utils_ins.apply_duplication(ref, chrom, ref_pos, svlen, cn, writer)
 
                         if svtype == 'BND':
                             event_id = var.info.get('EVENT')
@@ -115,6 +120,12 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
                             # if there is a deletion job to carry out and I have not carried out before
                             if del_job and event_id not in processed_sources:
                                 length, _ = del_job
+
+                                # Write the padding base before the deletion
+                                if ref_pos == start:
+                                    writer.write(ref.fetch(chrom, start, start + 1))
+                                    ref_pos = start + 1
+
                                 ref_pos = utils_ins.apply_deletion(ref_pos, length)
                                 processed_sources.add(event_id)
                                 continue
@@ -122,7 +133,13 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
                             # ACTION: the 'PASTE' i.e. sink of the cut&paste or copy&paste TRAs
                             ins_job = tra_cache["insertions"].get(chrom, {}).get(var.pos)
                             if ins_job and event_id not in processed_sinks:
-                                seq, _ = ins_job
+                                seq, attach_after, _ = ins_job
+
+                                # Write the padding base before the insertion
+                                if attach_after and ref_pos == start:
+                                    writer.write(ref.fetch(chrom, start, start + 1))
+                                    ref_pos = start + 1
+
                                 utils_ins.apply_insertion(writer, seq)
                                 processed_sinks.add(event_id)
                                 continue
