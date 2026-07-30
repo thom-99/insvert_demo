@@ -333,14 +333,13 @@ def prefetch_translocations(vcf_path, ref_path):
         if not res: continue
         
         tra_type, src_chr, (s_start, s_end), snk_chr, snk_pos, del_pos, is_inverted, attach_after = res
-        sequence = ref.fetch(src_chr, s_start, s_end)
-        if is_inverted:
-            sequence = reverse_complement(sequence)
+        tra_len = s_end - s_start
 
         if tra_type == "TRA_CUT" and del_pos is not None:
-            tra_map["deletions"][src_chr][del_pos] = (len(sequence), event_id)
+            tra_map["deletions"][src_chr][del_pos] = (tra_len, event_id)
         
-        tra_map["insertions"][snk_chr][snk_pos] = (sequence, attach_after, event_id)
+        # Store coordinates for lazy loading: (src_chr, s_start, s_end, is_inverted, attach_after, event_id)
+        tra_map["insertions"][snk_chr][snk_pos] = (src_chr, s_start, s_end, is_inverted, attach_after, event_id)
 
     vcf.close(); ref.close()
     return tra_map

@@ -203,12 +203,17 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             # ACTION: the 'PASTE' i.e. sink of the cut&paste or copy&paste TRAs
                             ins_job = tra_cache["insertions"].get(chrom, {}).get(var.pos)
                             if ins_job and event_id not in processed_sinks:
-                                seq, attach_after, _ = ins_job
+                                src_chr, s_start, s_end, is_inverted, attach_after, _ = ins_job
 
                                 # Write the padding base before the insertion
                                 if attach_after and ref_pos == start:
                                     writer.write(ref.fetch(chrom, start, start + 1))
                                     ref_pos = start + 1
+
+                                # Lazy load sequence from reference genome
+                                seq = ref.fetch(src_chr, s_start, s_end)
+                                if is_inverted:
+                                    seq = utils_ins.reverse_complement(seq)
 
                                 utils_ins.apply_insertion(writer, seq)
                                 processed_sinks.add(event_id)
