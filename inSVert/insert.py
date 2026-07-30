@@ -44,7 +44,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
                 processed_sinks = set()
 
                 for chrom in ref.references:
-                    print(f"Processing {chrom} (Haplotype {haplotype+1})...", end="\r")
+                    progress.console.print(f"Processing {chrom} (Haplotype {haplotype+1})...", end="\r")
 
                     if ploidy==1:
                         out_f.write(f">{chrom}\n")
