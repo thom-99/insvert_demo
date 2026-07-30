@@ -115,8 +115,14 @@ def simulate_cmd(config, reference, output, seed, exclude):
     show_default=True, 
     help="Path for the modified output FASTA."
 )
+@click.option(
+    "--skip-unphased-variants",
+    is_flag=True,
+    default=False,
+    help="Skip variants with unphased genotypes (e.g., 0/1) instead of randomly assigning them to a haplotype."
+)
 
-def insert_cmd(reference, vcf, ploidy, gc, output):
+def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants):
     """
     Insert structural variants from a VCF file into a reference genome.
     
@@ -153,7 +159,7 @@ def insert_cmd(reference, vcf, ploidy, gc, output):
     # 2. Execution with Spinner
     with console.status(f"[bold green]Processing Genome (GC={gc})...[/bold green]", spinner="dots"):
             try:
-                insert.run(gc, reference, vcf, ploidy, output)
+                insert.run(gc, reference, vcf, ploidy, output, skip_unphased_variants)
             except Exception as e:
                 console.print(f"[bold red]Error:[/bold red] {e}")
                 raise click.Abort()

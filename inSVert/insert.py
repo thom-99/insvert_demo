@@ -1,5 +1,6 @@
 from . import utils_ins
 import pysam
+import random
 from rich.progress import Progress
 
 class BufferWriter:
@@ -20,7 +21,7 @@ class BufferWriter:
             self.fh.write(self.buffer + '\n')
             self.buffer = ""
 
-def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
+def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=False):
     
     print(f'Streaming variants from {vcf_file}...')
     ref = pysam.FastaFile(ref_fasta)
@@ -28,9 +29,23 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
     vcf = pysam.VariantFile(sorted_vcf_path)
     tra_cache = utils_ins.prefetch_translocations(sorted_vcf_path, ref_fasta)
     
-    #count tot. variants and multiply by ploidy for rich progress bar
-    total_variants = sum(1 for _ in vcf)
+    # Combined pass: count total variants AND detect unphased heterozygous genotypes
+    total_variants = 0
+    unphased_count = 0
+    for rec in vcf:
+        total_variants += 1
+        gt = rec.samples[0]['GT']
+        if not rec.samples[0].phased and len(set(gt)) > 1:
+            unphased_count += 1
     total_steps = total_variants * ploidy 
+
+    if unphased_count > 0:
+        action = "Skipping" if skip_unphased else "Randomly assigning to haplotypes"
+        print(
+            f"\n⚠ WARNING: {unphased_count} variant(s) in the VCF have unphased "
+            f"genotypes (e.g., 0/1). Phased genotypes (e.g., 0|1) are required "
+            f"for deterministic haplotype placement. {action}.\n"
+        )
 
     with open(output_fasta, 'w') as out_f:
         writer = BufferWriter(out_f)
@@ -42,9 +57,12 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
                 # Initialize ONCE per haplotype so inter-chromosomal TRA are tracked
                 processed_sources = set()
                 processed_sinks = set()
+                # Cache random haplotype assignments for unphased BND EVENTs
+                # so all mates in the same event get the same assignment
+                unphased_event_assignments = {}
 
                 for chrom in ref.references:
-                    progress.console.print(f"Processing {chrom} (Haplotype {haplotype+1})...", end="\r")
+                    print(f"Processing {chrom} (Haplotype {haplotype+1})...", end="\r")
 
                     if ploidy==1:
                         out_f.write(f">{chrom}\n")
@@ -62,9 +80,61 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta):
                     for var in chrom_variants:
                         progress.advance(task)
                         
-                        # only apply ig the allele at the haplotype is 1 
-                        if var.samples[0]['GT'][haplotype] != 1:
-                            continue 
+                        # HANDLING UNPHASED VARIANTS AND ASSIGNING HAPLOTYPES
+                        sample = var.samples[0]
+                        is_phased = sample.phased
+
+                        # Distinguish truly ambiguous unphased (heterozygous e.g. 0/1)
+                        # from deterministic unphased (homozygous e.g. 1/1 or 0/0).
+                        # Homozygous genotypes have identical alleles on every haplotype,
+                        # so phasing is irrelevant — treat them like phased records.
+                        gt = list(sample['GT'])
+                        is_heterozygous = len(set(gt)) > 1
+
+                        if not is_phased and is_heterozygous:
+                            if skip_unphased:
+                                continue
+
+                            # For BNDs: all mates in the same EVENT must get the
+                            # same random assignment to avoid partial translocations
+                            svtype_check = var.info.get("SVTYPE")
+                            event_id = var.info.get("EVENT") if svtype_check == "BND" else None
+
+                            if event_id and event_id in unphased_event_assignments:
+                                # Reuse the cached assignment for this EVENT
+                                shuffled_gt = unphased_event_assignments[event_id]
+                            else:
+                                # Make a fresh random assignment
+                                shuffled_gt = list(gt)
+                                if 1 not in shuffled_gt:
+                                    continue  # No ALT allele (e.g., 0/0)
+                                random.shuffle(shuffled_gt)
+
+                                # Cache it for BND EVENT consistency
+                                if event_id:
+                                    unphased_event_assignments[event_id] = shuffled_gt
+
+                            # Warn the user
+                            var_id = var.id if var.id else f"{var.chrom}:{var.pos}"
+                            sv_label = var.info.get("SVTYPE", "UNKNOWN")
+                            assigned_haps = [str(idx + 1) for idx, allele in enumerate(shuffled_gt) if allele == 1]
+                            haps_str = ", ".join(assigned_haps)
+                            print(
+                                f"WARNING: Variant '{var_id}' ({sv_label} at "
+                                f"{var.chrom}:{var.pos}) is unphased. Phasing "
+                                f"information is needed for correct haplotype "
+                                f"assignment. Randomly assigned to Haplotype(s) "
+                                f"{haps_str}."
+                            )
+
+                            # Apply only if this haplotype got the ALT allele
+                            if shuffled_gt[haplotype] != 1:
+                                continue
+                        else:
+                            # Phased: use existing logic
+                            if sample['GT'][haplotype] != 1:
+                                continue 
+
 
 
                         start = var.pos - 1 #VCF is 1-indexed, python is 0-indexed
