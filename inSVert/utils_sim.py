@@ -76,6 +76,18 @@ def parse_config(config_path):
 
             
         sv_data[sv_type] = {'lengths': lengths}
+
+        # PARSE REVERSE_RATIO (specific to TRA_CUT / TRA_COPY)
+        if sv_type in ('TRA_CUT', 'TRA_COPY'):
+            rr = settings.get('reverse_ratio')
+            if rr is None and isinstance(params, dict):
+                rr = params.get('reverse_ratio')
+            if rr is not None:
+                if not (0.0 <= rr <= 1.0):
+                    raise ValueError(
+                        f"Config Error: '{sv_type}.reverse_ratio' must be between 0.0 and 1.0, got {rr}"
+                    )
+                sv_data[sv_type]['reverse_ratio'] = rr
         
 
         # GENERATE COPY NUMBERS (specific to DUP)
@@ -402,9 +414,15 @@ def fetch_ref_base(chrom, pos, ref_fasta):
     return ref_fasta.fetch(chrom, pos - 1, pos)
 
 
-def generate_tra_bnds(svtype, chrom_src, pos_src, chrom_dst, pos_dst, length, event_id, gt, ref_fasta):
+def generate_tra_bnds(svtype, chrom_src, pos_src, chrom_dst, pos_dst, length, event_id, gt, ref_fasta, is_reverse=False):
     """
     Builds the Breakend objects for TRA_CUT or TRA_COPY, using the true reference bases.
+    
+    Args:
+        is_reverse (bool): If True, the translocated segment is pasted in reverse-complement
+                           orientation. Swaps paste BND brackets from t[p[ / ]p]t (forward)
+                           to t]p] / [p[t (reverse) per VCF 4.2 spec.
+    
     Returns a list of Breakend objects.
     """
     # Fetch true bases using the helper
@@ -414,26 +432,54 @@ def generate_tra_bnds(svtype, chrom_src, pos_src, chrom_dst, pos_dst, length, ev
     
     bnds = []
     
-    # 1. PASTE START
-    bnds.append(VariantObjects.Breakend(
-        chrom_dst, pos_dst, f"{event_id}.P1", gt, f"{event_id}.P2", event_id, 
-        f"{ref_dst}[{chrom_src}:{pos_src + 1}[", ref_dst))
+    if not is_reverse:
+        # FORWARD ORIENTATION (current behavior, unchanged)
+        # 1. PASTE START
+        bnds.append(VariantObjects.Breakend(
+            chrom_dst, pos_dst, f"{event_id}.P1", gt, f"{event_id}.P2", event_id, 
+            f"{ref_dst}[{chrom_src}:{pos_src + 1}[", ref_dst))
+            
+        bnds.append(VariantObjects.Breakend(
+            chrom_src, pos_src + 1, f"{event_id}.P2", gt, f"{event_id}.P1", event_id, 
+            f"]{chrom_dst}:{pos_dst}]{ref_src_start}", ref_src_start))
+            
+        # 2. PASTE END
+        bnds.append(VariantObjects.Breakend(
+            chrom_src, pos_src + length, f"{event_id}.P3", gt, f"{event_id}.P4", event_id, 
+            f"{ref_src_end}[{chrom_dst}:{pos_dst + 1}[", ref_src_end))
+            
+        bnds.append(VariantObjects.Breakend(
+            chrom_dst, pos_dst + 1, f"{event_id}.P4", gt, f"{event_id}.P3", event_id, 
+            f"]{chrom_src}:{pos_src + length}]{ref_dst}", ref_dst))
+    else:
+        # REVERSE ORIENTATION
+        # The translocated segment is pasted in reverse-complement.
+        # Per VCF 4.2 spec: t[p[ / ]p]t → t]p] / [p[t
+        # Source coordinates also swap: dst now joins to src_end first (reading right-to-left)
         
-    bnds.append(VariantObjects.Breakend(
-        chrom_src, pos_src + 1, f"{event_id}.P2", gt, f"{event_id}.P1", event_id, 
-        f"]{chrom_dst}:{pos_dst}]{ref_src_start}", ref_src_start))
+        # re-fetch ref for dst_pos+1 (needed for P3/P4 in reverse)
+        ref_dst_plus1 = fetch_ref_base(chrom_dst, pos_dst + 1, ref_fasta)
+
+        # 1. PASTE START — dst joins to src_end (reverse extending left)
+        bnds.append(VariantObjects.Breakend(
+            chrom_dst, pos_dst, f"{event_id}.P1", gt, f"{event_id}.P2", event_id,
+            f"{ref_dst}]{chrom_src}:{pos_src + length}]", ref_dst))
         
-    # 2. PASTE END
-    bnds.append(VariantObjects.Breakend(
-        chrom_src, pos_src + length, f"{event_id}.P3", gt, f"{event_id}.P4", event_id, 
-        f"{ref_src_end}[{chrom_dst}:{pos_dst + 1}[", ref_src_end))
+        bnds.append(VariantObjects.Breakend(
+            chrom_src, pos_src + length, f"{event_id}.P2", gt, f"{event_id}.P1", event_id,
+            f"{ref_src_end}]{chrom_dst}:{pos_dst}]", ref_src_end))
         
-    bnds.append(VariantObjects.Breakend(
-        chrom_dst, pos_dst + 1, f"{event_id}.P4", gt, f"{event_id}.P3", event_id, 
-        f"]{chrom_src}:{pos_src + length}]{ref_dst}", ref_dst))
+        # 2. PASTE END — src_start joins back to dst (reverse extending right)
+        bnds.append(VariantObjects.Breakend(
+            chrom_dst, pos_dst + 1, f"{event_id}.P3", gt, f"{event_id}.P4", event_id,
+            f"[{chrom_src}:{pos_src + 1}[{ref_dst_plus1}", ref_dst_plus1))
         
+        bnds.append(VariantObjects.Breakend(
+            chrom_src, pos_src + 1, f"{event_id}.P4", gt, f"{event_id}.P3", event_id,
+            f"[{chrom_dst}:{pos_dst + 1}[{ref_src_start}", ref_src_start))
+    
     if svtype == "TRA_CUT":
-        # 3. HEAL THE SOURCE
+        # 3. HEAL THE SOURCE (orientation-independent — always forward)
         ref_src_heal_start = fetch_ref_base(chrom_src, pos_src, ref_fasta)
         ref_src_heal_end = fetch_ref_base(chrom_src, pos_src + length + 1, ref_fasta)
         

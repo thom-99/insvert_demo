@@ -219,9 +219,11 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None):
                         utils_sim.track_sv(sv_positions, chrom_src, pos_src, pos_src + l, gt)
                         
                     # 3. Generate and write BNDs
+                    reverse_ratio = fakedict[svtype].get('reverse_ratio', 0.0)
+                    is_reverse = random.random() < reverse_ratio
                     bnds = utils_sim.generate_tra_bnds(
                         svtype, chrom_src, pos_src, chrom_dst, pos_dst, 
-                        l, event_id, gt, ref_fasta
+                        l, event_id, gt, ref_fasta, is_reverse
                     )
                     
                     for bnd in bnds:
