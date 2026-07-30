@@ -3,3 +3,12 @@ inSVert/__pycache__
 .aider*
 .vscode/
 .BND-notes.txt
+
+# R history files
+.Rhistory
+
+# Python bytecode and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
