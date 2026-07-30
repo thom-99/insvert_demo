@@ -1,5 +1,6 @@
 import pytest
-from inSVert.utils_ins import prefetch_translocations
+import pysam
+from inSVert.utils_ins import prefetch_translocations, reverse_complement
 
 def test_prefetch_tra_copy_inter(test_data_dir, test_ref_path):
     vcf_path = str(test_data_dir / "tra_copy_inter.vcf")
@@ -7,8 +8,12 @@ def test_prefetch_tra_copy_inter(test_data_dir, test_ref_path):
     
     assert 'chr1' in tra_map['insertions']
     assert 500 in tra_map['insertions']['chr1']
-    sequence, attach_after, event_id = tra_map['insertions']['chr1'][500]
+    src_chr, s_start, s_end, is_inverted, attach_after, event_id = tra_map['insertions']['chr1'][500]
     assert event_id == 'COPY1'
+    ref = pysam.FastaFile(str(test_ref_path))
+    sequence = ref.fetch(src_chr, s_start, s_end)
+    if is_inverted:
+        sequence = reverse_complement(sequence)
     assert sequence == 'TGCA' * 250  # 1000bp
     
     assert not tra_map['deletions']
@@ -19,8 +24,12 @@ def test_prefetch_tra_copy_intra(test_data_dir, test_ref_path):
     
     assert 'chr1' in tra_map['insertions']
     assert 500 in tra_map['insertions']['chr1']
-    sequence, attach_after, event_id = tra_map['insertions']['chr1'][500]
+    src_chr, s_start, s_end, is_inverted, attach_after, event_id = tra_map['insertions']['chr1'][500]
     assert event_id == 'COPY2'
+    ref = pysam.FastaFile(str(test_ref_path))
+    sequence = ref.fetch(src_chr, s_start, s_end)
+    if is_inverted:
+        sequence = reverse_complement(sequence)
     assert sequence == 'ACGT' * 250  # 1000bp
     
     assert not tra_map['deletions']
@@ -31,8 +40,12 @@ def test_prefetch_tra_cut_inter(test_data_dir, test_ref_path):
     
     assert 'chr1' in tra_map['insertions']
     assert 500 in tra_map['insertions']['chr1']
-    sequence, attach_after, event_id = tra_map['insertions']['chr1'][500]
+    src_chr, s_start, s_end, is_inverted, attach_after, event_id = tra_map['insertions']['chr1'][500]
     assert event_id == 'CUT1'
+    ref = pysam.FastaFile(str(test_ref_path))
+    sequence = ref.fetch(src_chr, s_start, s_end)
+    if is_inverted:
+        sequence = reverse_complement(sequence)
     assert sequence == 'TGCA' * 250  # 1000bp
     
     assert 'chr2' in tra_map['deletions']
@@ -45,8 +58,12 @@ def test_prefetch_tra_cut_intra(test_data_dir, test_ref_path):
     
     assert 'chr1' in tra_map['insertions']
     assert 7000 in tra_map['insertions']['chr1']
-    sequence, attach_after, event_id = tra_map['insertions']['chr1'][7000]
+    src_chr, s_start, s_end, is_inverted, attach_after, event_id = tra_map['insertions']['chr1'][7000]
     assert event_id == 'CUT2'
+    ref = pysam.FastaFile(str(test_ref_path))
+    sequence = ref.fetch(src_chr, s_start, s_end)
+    if is_inverted:
+        sequence = reverse_complement(sequence)
     assert sequence == 'ACGT' * 250  # 1000bp
     
     assert 'chr1' in tra_map['deletions']
@@ -69,7 +86,7 @@ def test_prefetch_mixed_events(test_data_dir, test_ref_path, capsys):
     
     assert 'chr1' in tra_map['insertions']
     assert 500 in tra_map['insertions']['chr1']
-    sequence, attach_after, event_id = tra_map['insertions']['chr1'][500]
+    src_chr, s_start, s_end, is_inverted, attach_after, event_id = tra_map['insertions']['chr1'][500]
     assert event_id == 'COPY1'
     
     captured = capsys.readouterr()
@@ -78,5 +95,9 @@ def test_prefetch_mixed_events(test_data_dir, test_ref_path, capsys):
 def test_prefetch_sequence_content(test_data_dir, test_ref_path):
     vcf_path = str(test_data_dir / "tra_copy_inter.vcf")
     tra_map = prefetch_translocations(vcf_path, str(test_ref_path))
-    sequence, attach_after, event_id = tra_map['insertions']['chr1'][500]
+    src_chr, s_start, s_end, is_inverted, attach_after, event_id = tra_map['insertions']['chr1'][500]
+    ref = pysam.FastaFile(str(test_ref_path))
+    sequence = ref.fetch(src_chr, s_start, s_end)
+    if is_inverted:
+        sequence = reverse_complement(sequence)
     assert sequence == 'TGCA' * 250

@@ -85,11 +85,8 @@ for the final version:
 
 
 **main features**
-- implement reciprocal traslocations a.k.a recombinations (?)
-- add logic to parse all 4 BND orientation and implement them correctly in the reference 
+- implement reciprocal traslocations i.e. chromosome arm swaps: pay attention to coordinate tracking and the buffer zone at the end of the chromosome (?)
 - add logic to simulate also inverted TRA/DUP (revcomp) - use a parameter in the config: forward/inverted ratio
-- rework the is_valid_tra() function to use brakets orientations rather than positions to determine source/sink chroms (tied to above). ISSUE. 
-- add Exception to ignore the UNPHASED variants in a VCF file (think more about this) or fallback to randomness?
 
 **quality of life**
 

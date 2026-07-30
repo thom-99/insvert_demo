@@ -3,6 +3,8 @@ inSVert/__pycache__
 .aider*
 .vscode/
 .BND-notes.txt
+.changes.txt
+.task_plan.md
 
 # R history files
 .Rhistory
