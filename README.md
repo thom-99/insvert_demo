@@ -97,9 +97,7 @@ for the final version:
 - add an option to insert to dynamically generate and save the INS sequences into a separate auxiliary FASTA file for accurate benchmarking. 
 
 **performance optimizations**
-- multiprocessing for multiple haplotypes as a DEFAULT (speed)
-- in the prefetch_tra function, instead of storing the entire sequence store just the start and end positions and let pysam lazy load the sequence later (reduce memory usage)
-
+- multiprocessing for multiple haplotypes as a DEFAULT (speed)(keep for v1)
 
 **extras**
 - containerize in docker image 

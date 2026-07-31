@@ -50,6 +50,7 @@ variants:
   TRA_COPY:
     count: 10
     distribution: "normal"   
+    reverse_ratio: 0.2   # Probability of being spawned in reverse orientation 
     parameters:
       median_length: 50000
       sigma: 1000
@@ -60,6 +61,7 @@ variants:
   TRA_CUT:
     count: 10
     distribution: "normal"   
+    reverse_ratio: 0.2   # Probability of being spawned in reverse orientation 
     parameters:
       median_length: 50000
       sigma: 1000
