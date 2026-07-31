@@ -5,7 +5,7 @@
 # inSVert 
 inSVert is a software built for the simulation of structural variants and for the insertion of structural variants into a reference genome. 
 
-inSVert main utility lies in benchmarking different read mappers and variant callers against a ground thruth set of structural variants. The software is composed by two modules: simulate & insert. 
+The software is composed by two modules: simulate & insert. 
 
 ![Alt text](img/benchmarking_workflow.png)
 
@@ -57,7 +57,7 @@ and check for a correspondance between the reference of the VCF and the one you 
 
 to insert Structural Variants from a sorted VCF to a reference genome, simply type 
 ```
-inSVert insert reference.fasta simulated.vcf --ploidy 2 --gc 0.41 -o simulated.fasta
+inSVert insert reference.fasta simulated.vcf --ploidy 2 -o simulated.fasta
 ```
 where the first argument is the path to the reference genome and the second one the path to the VCF chosen by the user; the --ploidy argument is not optional and requires to specify how many copies of the genome to simulate. If you are using inSVert simulate to produce a VCF, it has to match the ploidy argument of the config.yaml. In any case, the genotype string of your variants in the VCF should be informative about the ploidy number you need to insert here.  
 
@@ -68,6 +68,8 @@ optional arguments:
 -o / --output : path to which you want your output fasta file to be written
 
 --gc : GC ratio used when generating insertion sequences, the default is set to the human GC content (0.41)
+
+--skip-unphased-variants : with this option unphased variants are skipped entirely, rather than assigned to a random haplotype.
 ```
 
 
@@ -86,7 +88,6 @@ for the final version:
 
 **main features**
 - implement reciprocal traslocations i.e. chromosome arm swaps: pay attention to coordinate tracking and the buffer zone at the end of the chromosome (?)
-- add logic to simulate also inverted TRA/DUP (revcomp) - use a parameter in the config: forward/inverted ratio
 
 **quality of life**
 
@@ -109,4 +110,8 @@ utilities:
 
 
 
+use cases showcase ideads:
+
+
+- take a crop genome and simulate several SVs on it, use badread to generate reads and benchmark different variant callers , evaluate against the ground truth using truvari and output the results in a cool html report. 
 
