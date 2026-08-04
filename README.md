@@ -87,7 +87,7 @@ for the final version:
 
 
 **main features**
-- implement reciprocal traslocations i.e. chromosome arm swaps: pay attention to coordinate tracking and the buffer zone at the end of the chromosome (?)
+- implement SNPs (out of scope?)
 
 **quality of life**
 
@@ -96,6 +96,7 @@ for the final version:
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
 - add a --split-haplotypes flag in the insert command to generate [ploidy] haplotypes in fasta format 
 - add an option to insert to dynamically generate and save the INS sequences into a separate auxiliary FASTA file for accurate benchmarking. 
+- modify BND formatting to include PAIRID in addition to already present MATEI- modify BND formatting to include PAIRID in addition to already present MATEID
 
 **performance optimizations**
 - multiprocessing for multiple haplotypes as a DEFAULT (speed)(keep for v1)
@@ -115,3 +116,6 @@ use cases showcase ideads:
 
 - take a crop genome and simulate several SVs on it, use badread to generate reads and benchmark different variant callers , evaluate against the ground truth using truvari and output the results in a cool html report. 
 
+
+note:
+there are two ways in which it makes sense to represent cut and paste traslocations. One if with 6 BND, 2 of which determine a heal adjacency. Another otion could be with 4 BNDs ++ 1 DEL event. Essentially a dDUP and a DEL, which explains the missing piece on the source chrom. Reflect on this aspect and ask expert opinion on this. 
