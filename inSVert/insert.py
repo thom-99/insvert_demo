@@ -166,7 +166,15 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
                             # VARIANT PROCESSING
                             if svtype == 'INS':
-                                ins_seq = utils_ins.generate_seq(svlen, gc_content)
+                                explicit_seq, warning = utils_ins.extract_explicit_ins_sequence(var)
+                                if warning:
+                                    print(f"\n{warning}")
+                                
+                                if explicit_seq:
+                                    ins_seq = explicit_seq
+                                else:
+                                    ins_seq = utils_ins.generate_seq(svlen, gc_content)
+                                
                                 utils_ins.apply_insertion(writer, ins_seq)
                                 # ref_pos stays same
                                     

@@ -10,6 +10,7 @@ import bisect
 import math
 import random
 from . import VariantObjects
+from .utils_ins import reverse_complement
 
 
 
@@ -412,6 +413,14 @@ def fetch_ref_base(chrom, pos, ref_fasta):
     """
     # pysam is 0-indexed, so we fetch from (pos - 1) to (pos)
     return ref_fasta.fetch(chrom, pos - 1, pos)
+
+
+def fetch_ref_span(chrom, start_1idx, end_1idx, ref_fasta):
+    """
+    Fetches a reference sequence span for 1-indexed inclusive VCF coordinates.
+    Used by non-symbolic VCF generation to build explicit REF/ALT strings.
+    """
+    return ref_fasta.fetch(chrom, start_1idx - 1, end_1idx).upper()
 
 
 def generate_tra_bnds(svtype, chrom_src, pos_src, chrom_dst, pos_dst, length, event_id, gt, ref_fasta, is_reverse=False):
