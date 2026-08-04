@@ -41,6 +41,8 @@ optional arguments:
 --seed : set a seed for the random library for reproducible results
 
 --exclude : provide a .bed file with genomic coordinates to exclude from the simulation (ex. mithocondrial DNA, centromeres, etc...)
+
+--non-symbolic : simulate a non symbolic VCF with explicit ALT and REF sequences. [!] this vastly increases the size of the resulting VCF
 ```
 
 ### inSVert insert
@@ -60,7 +62,6 @@ to insert Structural Variants from a sorted VCF to a reference genome, simply ty
 inSVert insert reference.fasta simulated.vcf --ploidy 2 -o simulated.fasta
 ```
 where the first argument is the path to the reference genome and the second one the path to the VCF chosen by the user; the --ploidy argument is not optional and requires to specify how many copies of the genome to simulate. If you are using inSVert simulate to produce a VCF, it has to match the ploidy argument of the config.yaml. In any case, the genotype string of your variants in the VCF should be informative about the ploidy number you need to insert here.  
-
 
 optional arguments:
 
