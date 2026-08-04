@@ -48,7 +48,13 @@ def cli():
     default=None,
     help="BED file containing genomic coordinates to exclude from SV simulation."
 )
-def simulate_cmd(config, reference, output, seed, exclude):
+@click.option(
+    "--non-symbolic",
+    is_flag=True,
+    default=False,
+    help="Output explicit REF/ALT sequences instead of symbolic tags (<INS>, <DEL>, etc.)."
+)
+def simulate_cmd(config, reference, output, seed, exclude, non_symbolic):
     """
     Generate simulated structural variants based on a configuration file.
     
@@ -84,7 +90,7 @@ def simulate_cmd(config, reference, output, seed, exclude):
     # 2. Execution with Spinner
     with console.status("[bold cyan]Generating Structural Variants...[/bold cyan]", spinner="dots"):
         try:
-            simulate.run(config, reference, output, seed, exclude)
+            simulate.run(config, reference, output, seed, exclude, non_symbolic)
         except Exception as e:
             console.print(f"[bold red]Error:[/bold red] {e}")
             raise click.Abort()

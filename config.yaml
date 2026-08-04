@@ -1,5 +1,5 @@
 genome:
-  ploidy: 2
+  ploidy: 1
   heterozygosity: 0.5 # Probability that any given copy carries the variant
 
 variants:

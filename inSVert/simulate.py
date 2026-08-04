@@ -6,7 +6,7 @@ import random
 import pysam
 
 
-def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None):
+def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_symbolic=False):
 
     # setting up the seed for reproducibility
     if seed is not None:
@@ -78,6 +78,11 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None):
                     
                     # log SV and format a VCF line
                     if attempts <= 3:
+                        if non_symbolic:
+                            from .utils_ins import generate_seq
+                            ins_sequence = generate_seq(l, 0.5)
+                            alt_seq = f"{ref_base}{ins_sequence}"
+                            INS = VariantObjects.Insertion(chrom, pos, l, id, gt, ref_base, alt_seq=alt_seq)
                         
                         # track SVs
                         utils_sim.track_sv(sv_positions, chrom, pos, INS.get_end(), gt)
@@ -111,6 +116,10 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None):
                         DEL = VariantObjects.Deletion(chrom, pos, l, id, gt, ref_base)
 
                     if attempts <= 3:
+                        if non_symbolic:
+                            full_ref = utils_sim.fetch_ref_span(chrom, pos, pos + abs(l), ref_fasta)
+                            alt_seq = full_ref[0]
+                            DEL = VariantObjects.Deletion(chrom, pos, l, id, gt, ref_base, alt_seq=alt_seq, ref_seq=full_ref)
 
                         # track SV
                         utils_sim.track_sv(sv_positions, chrom, pos, DEL.get_end(), gt)
@@ -144,6 +153,12 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None):
                         INV = VariantObjects.Inversion(chrom, pos, l, id, gt, ref_base)
 
                     if attempts <= 3:
+                        if non_symbolic:
+                            anchor = ref_base
+                            forward_seq = utils_sim.fetch_ref_span(chrom, pos + 1, pos + l, ref_fasta)
+                            ref_seq = anchor + forward_seq
+                            alt_seq = anchor + utils_sim.reverse_complement(forward_seq)
+                            INV = VariantObjects.Inversion(chrom, pos, l, id, gt, ref_base, alt_seq=alt_seq, ref_seq=ref_seq)
 
                         # track SV
                         utils_sim.track_sv(sv_positions, chrom, pos, INV.get_end(), gt)
@@ -177,6 +192,12 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None):
                         DUP = VariantObjects.Duplication(chrom, pos, l, id, gt, ref_base, cn)
                     
                     if attempts <= 3:
+                        if non_symbolic:
+                            anchor = ref_base
+                            unit_seq = utils_sim.fetch_ref_span(chrom, pos + 1, pos + l, ref_fasta)
+                            ref_seq = anchor + unit_seq
+                            alt_seq = anchor + (unit_seq * cn)
+                            DUP = VariantObjects.Duplication(chrom, pos, l, id, gt, ref_base, cn, alt_seq=alt_seq, ref_seq=ref_seq)
 
                         # track SV
                         utils_sim.track_sv(sv_positions, chrom, pos, DUP.get_end(), gt)

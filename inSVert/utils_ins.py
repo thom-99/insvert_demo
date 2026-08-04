@@ -26,6 +26,70 @@ def reverse_complement(sequence: str) -> str:
     complement = str.maketrans("ATGCNatgcn", "TACGNtacgn")
     return sequence.translate(complement)[::-1]
 
+def extract_explicit_ins_sequence(var):
+    """
+    Attempts to extract an explicit DNA insertion sequence from a VCF record's
+    ALT field. Returns the sequence if valid, or None with an optional warning.
+    
+    Used by insert.py to detect non-symbolic INS records and use the provided
+    sequence instead of generating a random one.
+    
+    Args:
+        var: A pysam VariantRecord object with SVTYPE=INS.
+    
+    Returns:
+        tuple: (sequence: str or None, warning: str or None)
+            - (sequence, None) if a valid explicit sequence was found
+            - (sequence, warning_string) if explicit sequence was found but SVLEN mismatched
+            - (None, None) if ALT is symbolic (normal fallback)
+            - (None, warning_string) if ALT is malformed
+    """
+    alts = var.alts
+    if not alts or not alts[0]:
+        return None, None
+    
+    alt = alts[0]
+    ref = var.ref
+    
+    # Symbolic ALTs or BND notation: not explicit, fall back silently
+    if alt.startswith("<") or "[" in alt or "]" in alt:
+        return None, None
+    
+    # Validate DNA characters
+    if not re.match(r"^[ACGTNacgtn]+$", alt):
+        var_label = var.id if var.id else f"{var.chrom}:{var.pos}"
+        return None, (
+            f"WARNING: Variant '{var_label}' has non-DNA characters in ALT field "
+            f"'{alt[:50]}...'. Falling back to random sequence generation."
+        )
+    
+    # Extract inserted portion: ALT should start with REF (anchor/padding base)
+    if alt.upper().startswith(ref.upper()) and len(alt) > len(ref):
+        inserted_seq = alt[len(ref):]
+    else:
+        # Unexpected format — ALT doesn't start with REF anchor
+        var_label = var.id if var.id else f"{var.chrom}:{var.pos}"
+        return None, (
+            f"WARNING: Variant '{var_label}' has explicit ALT that does not start with "
+            f"REF anchor base '{ref}'. Falling back to random sequence generation."
+        )
+    
+    # Validate length against SVLEN
+    svlen = var.info.get("SVLEN")
+    if isinstance(svlen, tuple):
+        svlen = svlen[0]
+    
+    warning = None
+    if svlen is not None and abs(svlen) != len(inserted_seq):
+        var_label = var.id if var.id else f"{var.chrom}:{var.pos}"
+        warning = (
+            f"WARNING: Variant '{var_label}' explicit ALT sequence length "
+            f"({len(inserted_seq)} bp) does not match SVLEN ({abs(svlen)} bp). "
+            f"Proceeding using explicit ALT sequence."
+        )
+    
+    return inserted_seq, warning
+
 # --- STREAMING APPLICATION FUNCTIONS ---
 
 def apply_insertion(out_buffer, ins_seq: str):

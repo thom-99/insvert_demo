@@ -6,13 +6,14 @@ Structural Variant Objects used to build a VCF file
 
 class StructuralVariant(ABC):
     
-    def __init__(self, chrom:str, pos:int, length:int, id:str, genotype:str, ref_base:str):
+    def __init__(self, chrom:str, pos:int, length:int, id:str, genotype:str, ref_base:str, alt_seq:str=None, ref_seq:str=None):
         self.chrom = chrom
         self.pos = pos
         self.length = length
         self.id = id 
         self.genotype = genotype
-        self.ref = ref_base
+        self.ref = ref_seq if ref_seq is not None else ref_base
+        self.alt_seq = alt_seq
         self.qual = "."
         self.filter = "PASS"
         
@@ -39,13 +40,14 @@ class StructuralVariant(ABC):
         
 
 class Insertion(StructuralVariant):
-#implement also sequence as an optional argument to pass tk get_alt
 
-    def __init__(self, chrom, pos, length, id, genotype, ref_base):
-        super().__init__(chrom, pos, length, id, genotype, ref_base)
+    def __init__(self, chrom, pos, length, id, genotype, ref_base, alt_seq=None):
+        super().__init__(chrom, pos, length, id, genotype, ref_base, alt_seq=alt_seq)
 
     def get_alt(self):
-        return "<INS>" #for now, I'll keep the symbolic alt
+        if self.alt_seq is not None:
+            return self.alt_seq
+        return "<INS>"
     
     def get_end(self):
         return self.pos
@@ -58,12 +60,14 @@ class Insertion(StructuralVariant):
 
 class Deletion(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id, genotype, ref_base):
+    def __init__(self, chrom, pos, length, id, genotype, ref_base, alt_seq=None, ref_seq=None):
         if length>= 0:
             raise ValueError(f"Deletion length must be negative, got {length} instead")
-        super().__init__(chrom, pos, length, id, genotype, ref_base)
+        super().__init__(chrom, pos, length, id, genotype, ref_base, alt_seq=alt_seq, ref_seq=ref_seq)
 
     def get_alt(self):
+        if self.alt_seq is not None:
+            return self.alt_seq
         return "<DEL>"
     
     def get_end(self):
@@ -77,10 +81,12 @@ class Deletion(StructuralVariant):
 
 class Inversion(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id, genotype, ref_base):
-        super().__init__(chrom, pos, length, id, genotype, ref_base)
+    def __init__(self, chrom, pos, length, id, genotype, ref_base, alt_seq=None, ref_seq=None):
+        super().__init__(chrom, pos, length, id, genotype, ref_base, alt_seq=alt_seq, ref_seq=ref_seq)
 
     def get_alt(self):
+        if self.alt_seq is not None:
+            return self.alt_seq
         return "<INV>"
 
     def get_end(self):
@@ -92,14 +98,15 @@ class Inversion(StructuralVariant):
     
 
 
-
 class Duplication(StructuralVariant):
 
-    def __init__(self, chrom, pos, length, id, genotype, ref_base,copy_number:int):
-        super().__init__(chrom, pos, length, id, genotype, ref_base)
+    def __init__(self, chrom, pos, length, id, genotype, ref_base, copy_number:int, alt_seq=None, ref_seq=None):
+        super().__init__(chrom, pos, length, id, genotype, ref_base, alt_seq=alt_seq, ref_seq=ref_seq)
         self.copy_number = copy_number
 
     def get_alt(self):
+        if self.alt_seq is not None:
+            return self.alt_seq
         return "<DUP>"
     
     def get_end(self):
