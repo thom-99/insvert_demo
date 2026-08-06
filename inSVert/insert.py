@@ -22,7 +22,8 @@ class BufferWriter:
             self.buffer = ""
 
 def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=False):
-    
+    random.seed(42)
+
     print(f'Streaming variants from {vcf_file}...')
     ref = pysam.FastaFile(ref_fasta)
     sorted_vcf_path = utils_ins.prepare_vcf(vcf_file) #vcf preparation ensuring it is properly sorted
