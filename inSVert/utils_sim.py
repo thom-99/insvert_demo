@@ -334,14 +334,14 @@ def overlaps(chrom, start, end, genotype_str, sv_positions: dict):
             if idx > 0:
                 prev_start, prev_end = intervals[idx - 1]
                 # If the previous variant's END extends past our START, there's overlap.
-                if prev_end > start:
+                if prev_end >= start:
                     return True
 
             # 5. Check the Right Neighbor == the variant immediately AFTER the new one
             if idx < len(intervals):
                 next_start, next_end = intervals[idx]
                 # If the next variant's START begins before our END, we overlap.
-                if next_start < end:
+                if next_start <= end:
                     return True
 
     # otherwise there's no overlap

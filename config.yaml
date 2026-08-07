@@ -1,12 +1,12 @@
 genome:
-  ploidy: 1
+  ploidy: 2
   heterozygosity: 0.5 # Probability that any given copy carries the variant
 
 variants:
 
   DEL:
-    count: 50     #n. of variants to simulate 
-    distribution: "pareto"   # type of distr. for variant lengths (pareto/normal)
+    count: 100     #n. of variants to simulate 
+    distribution: "normal"   # type of distr. for variant lengths (pareto/normal)
     parameters:
       median_length: 5000      # Target median length in bp
       sigma:             # standard deviation for the normal distribution
@@ -14,7 +14,7 @@ variants:
       max_length: 100000     # maximum length of the variant
 
   INS:
-    count: 50
+    count: 100
     distribution: "normal" 
     parameters:
       median_length: 30000
@@ -24,7 +24,7 @@ variants:
 
 
   DUP:                                # tandem duplications
-    count: 50            
+    count: 100            
     distribution: "normal"
     parameters:
       median_length: 2000
@@ -38,7 +38,7 @@ variants:
 
 
   INV:
-    count: 50
+    count: 100
     distribution: "pareto"   
     parameters:
       median_length: 50000
@@ -48,7 +48,7 @@ variants:
 
   # Copy & Paste traslocations / Interspersed Duplications
   TRA_COPY:
-    count: 10
+    count: 100
     distribution: "normal"   
     reverse_ratio: 0.2   # Probability of being spawned in reverse orientation 
     parameters:
@@ -59,7 +59,7 @@ variants:
 
   # Cut & Paste traslocations
   TRA_CUT:
-    count: 10
+    count: 100
     distribution: "normal"   
     reverse_ratio: 0.2   # Probability of being spawned in reverse orientation 
     parameters:

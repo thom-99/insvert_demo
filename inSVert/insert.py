@@ -12,9 +12,14 @@ class BufferWriter:
 
     def write(self, data):
         self.buffer += data.upper()
-        while len(self.buffer) >= self.width:
-            self.fh.write(self.buffer[:self.width] + '\n')
-            self.buffer = self.buffer[self.width:]
+        pos = 0
+        lines = []
+        while pos + self.width <= len(self.buffer):
+            lines.append(self.buffer[pos:pos + self.width])
+            pos += self.width
+        if lines:
+            self.fh.write('\n'.join(lines) + '\n')
+        self.buffer = self.buffer[pos:]
     
     def flush(self):
         if self.buffer:
@@ -50,8 +55,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
     # Cache unphased assignments ONCE across all haplotype passes
     unphased_assignments = {}
-    # Track overlapping variants 
-    overlapping_variants = 0
+    # Track skipped positions as a set of (chrom, pos) so each distinct genomic position is counted exactly once, regardless of ploidy.
+    skipped_positions = set()
 
     with open(output_fasta, 'w') as out_f:
         writer = BufferWriter(out_f)
@@ -141,11 +146,19 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
 
                         start = var.pos - 1 #VCF is 1-indexed, python is 0-indexed
-                        
-                        # Check Overlap
-                        if start < ref_pos:
-                            overlapping_variants += 1
-                            continue 
+
+                        # Resolve svtype early so BNDs can be exempted from the
+                        # linear overlap check below.
+                        svtype = var.info.get("SVTYPE")
+
+                        # Check Overlap only for non-BND SVs.
+                        # BND companion records intentionally share coordinates with
+                        # their active sibling (the one that advances ref_pos). They
+                        # are already deduplicated via processed_sources/processed_sinks,
+                        # so applying start < ref_pos here would spuriously skip them.
+                        if svtype != "BND" and start < ref_pos:
+                            skipped_positions.add((haplotype, chrom, var.pos))
+                            continue
 
                         # 1. Write Reference up to this SV
                         if start > ref_pos:
@@ -154,7 +167,6 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             ref_pos = start
                         
                         # 2. Dispatch to utils_ins based on Type
-                        svtype = var.info.get("SVTYPE")
                         
                         # comoute the length of the variant, BNDs are excluded as they do not have a svlength
                         if svtype != "BND":
@@ -240,8 +252,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                     
                     writer.flush()
     
-    if overlapping_variants > 0:
-        print(f"Warning: skipped {overlapping_variants} variant records due to coordinate overlaps.")
+    if skipped_positions:
+        print(f"Warning: skipped {len(skipped_positions)} variant records due to coordinate overlaps.")
 
     vcf.close()
     ref.close()

@@ -1,0 +1,33 @@
+# The 4 Bracket Orientations in BNDs Explained
+
+The ALT string of breakends is constructed with:
+- t : the string that replaces the reference base at the current position
+- p : the position of the mate breakend (formatted as chrom:pos)
+- [ or ] : indicates the direction and orientation of the joined sequence
+
+Example Setup:
+- Current BND: chr1:500 (ref base = A, so t = A)
+- Mate position p: chr2:1000
+- Reference sequence at chr2: ... T T T (left of p) | C (pos 1000) | G G G (right of p) ...
+
+---
+
+1. t[p[ : Forward extending right
+   - Definition: The piece extending to the right of p is joined after t.
+   - ALT = A[chr2:1000[
+   - Sequence = ( A C G G G ... )
+
+2. t]p] : Reverse extending left
+   - Definition: The reverse-complemented piece extending to the left of p is joined after t.
+   - ALT = A]chr2:1000]
+   - Sequence = ... T T T C -- revcomp --> ( A G A A A ... )
+
+3. ]p]t : Forward extending left
+   - Definition: The piece extending to the left of p is joined before t.
+   - ALT = ]chr2:1000]A
+   - Sequence = ( ... T T T C A )
+
+4. [p[t : Reverse extending right
+   - Definition: The reverse-complemented piece extending to the right of p is joined before t.
+   - ALT = [chr2:1000[A
+   - Sequence = C G G G ... -- revcomp --> ( ... C C C G A )
