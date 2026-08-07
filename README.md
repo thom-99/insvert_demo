@@ -88,9 +88,10 @@ for the final version:
 
 
 **main features**
-- implement SNPs (out of scope?)
-- bug: check for variants overlap also in insert.py
+- implement SNPs
  
+**bugs**
+- get to the bottom of variant overlaps, if needed rework the logic to parse TRAs 
 
 **quality of life**
 
@@ -98,7 +99,6 @@ for the final version:
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name x
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
 - add a --split-haplotypes flag in the insert command to generate [ploidy] haplotypes in fasta format 
-- add an option to insert to dynamically generate and save the INS sequences into a separate auxiliary FASTA file for accurate benchmarking. 
 - modify BND formatting to include PAIRID in addition to already present MATEI- modify BND formatting to include PAIRID in addition to already present MATEID
 
 **performance optimizations**
