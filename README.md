@@ -89,7 +89,6 @@ for the final version:
 
 **main features**
 - implement SNPs (out of scope?)
-- implement random seed to insert.py (perhaps fix it)
 - bug: check for variants overlap also in insert.py
  
 

@@ -48,6 +48,9 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
             f"for deterministic haplotype placement. {action}.\n"
         )
 
+    # Cache unphased assignments ONCE across all haplotype passes
+    unphased_assignments = {}
+
     with open(output_fasta, 'w') as out_f:
         writer = BufferWriter(out_f)
         
@@ -58,9 +61,6 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                 # Initialize ONCE per haplotype so inter-chromosomal TRA are tracked
                 processed_sources = set()
                 processed_sinks = set()
-                # Cache random haplotype assignments for unphased BND EVENTs
-                # so all mates in the same event get the same assignment
-                unphased_event_assignments = {}
 
                 for chrom in ref.references:
                     print(f"Processing {chrom} (Haplotype {haplotype+1})...", end="\r")
@@ -96,24 +96,24 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             if skip_unphased:
                                 continue
 
-                            # For BNDs: all mates in the same EVENT must get the
-                            # same random assignment to avoid partial translocations
+                            # Universal key: EVENT tag for BNDs (so all mates
+                            # in the same event get the same assignment),
+                            # (chrom, pos) for everything else.
                             svtype_check = var.info.get("SVTYPE")
-                            event_id = var.info.get("EVENT") if svtype_check == "BND" else None
+                            if svtype_check == "BND":
+                                var_key = var.info.get("EVENT")
+                            else:
+                                var_key = (var.chrom, var.pos)
 
-                            if event_id and event_id in unphased_event_assignments:
-                                # Reuse the cached assignment for this EVENT
-                                shuffled_gt = unphased_event_assignments[event_id]
+                            if var_key in unphased_assignments:
+                                shuffled_gt = unphased_assignments[var_key]
                             else:
                                 # Make a fresh random assignment
                                 shuffled_gt = list(gt)
                                 if 1 not in shuffled_gt:
                                     continue  # No ALT allele (e.g., 0/0)
                                 random.shuffle(shuffled_gt)
-
-                                # Cache it for BND EVENT consistency
-                                if event_id:
-                                    unphased_event_assignments[event_id] = shuffled_gt
+                                unphased_assignments[var_key] = shuffled_gt
 
                             # Warn the user
                             var_id = var.id if var.id else f"{var.chrom}:{var.pos}"
