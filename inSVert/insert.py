@@ -50,6 +50,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
     # Cache unphased assignments ONCE across all haplotype passes
     unphased_assignments = {}
+    # Track overlapping variants 
+    overlapping_variants = 0
 
     with open(output_fasta, 'w') as out_f:
         writer = BufferWriter(out_f)
@@ -142,6 +144,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                         
                         # Check Overlap
                         if start < ref_pos:
+                            overlapping_variants += 1
                             continue 
 
                         # 1. Write Reference up to this SV
@@ -236,7 +239,10 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                         writer.write(chunk)
                     
                     writer.flush()
-            
+    
+    if overlapping_variants > 0:
+        print(f"Warning: skipped {overlapping_variants} variant records due to coordinate overlaps.")
+
     vcf.close()
     ref.close()
     print(f'\nDone! Output written to {output_fasta}')
