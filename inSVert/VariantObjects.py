@@ -160,6 +160,36 @@ class Breakend(StructuralVariant):
                 f"{self.qual}\t{self.filter}\t{info}\tGT\t{self.genotype}")
 
 
+class SNP:
+    """
+    Represents a Single-Nucleotide Polymorphism (SNP) in VCF 4.2 format.
+    
+    Unlike StructuralVariant subclasses, SNPs have no padding base, no SVTYPE,
+    no SVLEN, and no END field. The REF and ALT are both single nucleotides,
+    and POS points directly to the base being substituted.
+    """
+    
+    def __init__(self, chrom: str, pos: int, id: str, genotype: str, ref_base: str, alt_base: str):
+        self.chrom = chrom
+        self.pos = pos          # 1-indexed VCF position of the substituted base
+        self.id = id
+        self.genotype = genotype
+        self.ref = ref_base     # Single reference nucleotide (A, C, G, or T)
+        self.alt = alt_base     # Single alternate nucleotide
+        self.qual = "."
+        self.filter = "PASS"
+    
+    def get_end(self) -> int:
+        """SNP occupies a single position."""
+        return self.pos
+    
+    def format(self) -> str:
+        """Formats the SNP as a VCF 4.2 line with VT=SNP in the INFO column."""
+        return (f"{self.chrom}\t{self.pos}\t{self.id}\t{self.ref}\t{self.alt}\t"
+                f"{self.qual}\t{self.filter}\tVT=SNP\tGT\t{self.genotype}")
+
+
+
 
 
 

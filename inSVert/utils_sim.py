@@ -40,9 +40,26 @@ def parse_config(config_path):
     
     # Iterate through the variants defined in YAML
     for sv_type, settings in config['variants'].items():
+        # SNP: ratio-based, no length distribution
+        if sv_type == 'SNP':
+            snp_ratio = settings.get('ratio')
+            if snp_ratio is None:
+                raise ValueError("Config Error: SNP requires a 'ratio' parameter (e.g., 0.0001)")
+            if not (0.0 < snp_ratio < 1.0):
+                raise ValueError(f"Config Error: SNP 'ratio' must be between 0 and 1, got {snp_ratio}")
+            tstv_ratio = settings.get('tstv_ratio', 2.0)
+            if tstv_ratio < 0:
+                raise ValueError(f"Config Error: SNP 'tstv_ratio' must be >= 0, got {tstv_ratio}")
+            sv_data['SNP'] = {
+                'ratio': snp_ratio,
+                'tstv_ratio': tstv_ratio
+            }
+            continue
+
         count = settings['count']
         dist_type = settings['distribution']
         params = settings['parameters']
+
         
         lengths = []
         
@@ -287,8 +304,10 @@ def buildheader(chroms, lengths, reference_path=None):
     header_lines.append('##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">')
     header_lines.append('##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Length of structural variant">')
     header_lines.append('##INFO=<ID=END,Number=1,Type=Integer,Description="End position of structural variant">')
+    header_lines.append('##INFO=<ID=VT,Number=1,Type=String,Description="Variant Type">')
 
     header_lines.append('##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakends">')
+
     header_lines.append('##INFO=<ID=EVENT,Number=1,Type=String,Description="ID of event associated with breakend">')
 
     # ALT fields
@@ -413,6 +432,34 @@ def fetch_ref_base(chrom, pos, ref_fasta):
     """
     # pysam is 0-indexed, so we fetch from (pos - 1) to (pos)
     return ref_fasta.fetch(chrom, pos - 1, pos)
+
+
+def pick_snp_alt(ref_base: str, tstv_ratio: float):
+    """
+    Given a reference base and a transition/transversion ratio, returns a
+    randomly selected ALT base respecting the Ts/Tv ratio.
+    
+    Transitions (Ts): A <-> G, C <-> T
+    Transversions (Tv): A <-> {C, T}, G <-> {C, T}, C <-> {A, G}, T <-> {A, G}
+    
+    P(transition) = tstv_ratio / (tstv_ratio + 1)
+    P(transversion) = 1 / (tstv_ratio + 1), split equally between 2 options.
+    
+    Returns None if ref_base is not A/C/G/T (e.g., N).
+    """
+    TRANSITIONS = {'A': 'G', 'G': 'A', 'C': 'T', 'T': 'C'}
+    TRANSVERSIONS = {'A': ['C', 'T'], 'G': ['C', 'T'], 'C': ['A', 'G'], 'T': ['A', 'G']}
+    
+    ref = ref_base.upper()
+    if ref not in TRANSITIONS:
+        return None
+    
+    p_transition = tstv_ratio / (tstv_ratio + 1)
+    if random.random() < p_transition:
+        return TRANSITIONS[ref]
+    else:
+        return random.choice(TRANSVERSIONS[ref])
+
 
 
 def fetch_ref_span(chrom, start_1idx, end_1idx, ref_fasta):

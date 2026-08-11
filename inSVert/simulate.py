@@ -47,7 +47,8 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
         print("Building SVs...")
         ref_fasta = pysam.FastaFile(fasta_path)
 
-        for svtype in fakedict:
+        sv_types = [k for k in fakedict if k != 'SNP']
+        for svtype in sv_types:
             if svtype == 'INS':
                 for l in fakedict[svtype]['lengths']:
 
@@ -249,6 +250,56 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
                     
                     for bnd in bnds:
                         vcf.write(bnd.format() + '\n')
+
+        # ---------------------------------------------------------------
+        # SNP SIMULATION (Per-chromosome uniform density)
+        # ---------------------------------------------------------------
+        if "SNP" in fakedict:
+            snp_ratio = fakedict['SNP']['ratio']
+            tstv_ratio = fakedict['SNP'].get('tstv_ratio', 2.0)
+            
+            print(f"Generating SNPs (ratio={snp_ratio}, Ts/Tv={tstv_ratio})...")
+            
+            snp_count = 0
+            total_skipped = 0
+            
+            for chrom, chrom_length in zip(chroms, lengths):
+                n_snps_chrom = int(chrom_length * snp_ratio)
+                if n_snps_chrom == 0:
+                    continue
+                
+                for i in range(n_snps_chrom):
+                    placed = False
+                    for attempt in range(3):
+                        pos = utils_sim.select_pos(chrom_length)
+                        gt = utils_sim.generate_genotype(ploidy, heterozygosity)
+                        
+                        if (utils_sim.overlaps(chrom, pos, pos + 1, gt, sv_positions) or
+                            utils_sim.overlaps_excluded_region(chrom, pos, pos + 1, excluded_regions)):
+                            continue
+                        
+                        ref_base = utils_sim.fetch_ref_base(chrom, pos, ref_fasta).upper()
+                        alt_base = utils_sim.pick_snp_alt(ref_base, tstv_ratio)
+                        if alt_base is None:
+                            continue  # Skip non-ACGT bases (N, etc.)
+                        
+                        placed = True
+                        break
+                    
+                    if not placed:
+                        total_skipped += 1
+                        continue
+                    
+                    snp_count += 1
+                    snp_id = f'inSVert.SNP.{snp_count}'
+                    snp = VariantObjects.SNP(chrom, pos, snp_id, gt, ref_base, alt_base)
+                    
+                    # Track single-base interval [pos, pos + 1)
+                    utils_sim.track_sv(sv_positions, chrom, pos, pos + 1, gt)
+                    vcf.write(snp.format() + '\n')
+            
+            print(f"Placed {snp_count} SNPs across {len(chroms)} contig(s) ({total_skipped} skipped)")
+
 
 
     ref_fasta.close()
