@@ -393,13 +393,13 @@ def find_valid_tra_coords(chroms, lengths, sv_length, gt, sv_positions, excluded
     pos_dst = select_pos(len_dst)
     
     # 1. Check boundaries
-    if pos_src + sv_length > len_src or pos_dst + 1 > len_dst:
+    if pos_src + sv_length + 1 > len_src or pos_dst + 1 > len_dst:
         return None
         
     # 2. Check overlaps
-    if (overlaps(chrom_src, pos_src, pos_src + sv_length, gt, sv_positions) or
+    if (overlaps(chrom_src, pos_src, pos_src + sv_length + 1, gt, sv_positions) or
         overlaps(chrom_dst, pos_dst, pos_dst + 1, gt, sv_positions) or
-        overlaps_excluded_region(chrom_src, pos_src, pos_src + sv_length, excluded_regions) or
+        overlaps_excluded_region(chrom_src, pos_src, pos_src + sv_length + 1, excluded_regions) or
         overlaps_excluded_region(chrom_dst, pos_dst, pos_dst + 1, excluded_regions)):
         return None
         

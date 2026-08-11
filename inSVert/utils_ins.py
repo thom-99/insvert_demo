@@ -254,45 +254,30 @@ def is_valid_tra(event_id, adjacencies):
     # -------------------------------------------------------------------------
     elif count == 3:
         # CRITICAL TOPOLOGY CHECK:
-        # The HEAL adjacency (H1, H2) bridges the excised segment on source_chrom.
-        # Therefore:
-        # 1. H1 and H2 MUST be intrachromosomal (r.chrom == m.chrom).
-        # 2. The interval (h_min, h_max) MUST strictly enclose the 2 source breakends
-        #    belonging to the PASTE adjacencies, while excluding the sink breakends.
+        # Filter to intrachromosomal adjacencies only.
+        # For inter-chromosomal TRA_CUT, only the Heal pair is intrachromosomal.
+        # For intra-chromosomal TRA_CUT, all 3 adjacencies are intrachromosomal.
+        intra_adjs = [(i, r, m) for i, (r, m) in enumerate(adjacencies) if r.chrom == m.chrom]
         
-        heal_adj = None
-        for i, (r, m) in enumerate(adjacencies):
-            if r.chrom != m.chrom:
-                continue
-            
-            h_min, h_max = min(r.pos, m.pos), max(r.pos, m.pos)
-            paste_adjs = [adj for j, adj in enumerate(adjacencies) if j != i]
-            
-            # Count breakends in paste_adjs that fall inside vs outside the HEAL interval
-            inside_bnds = []
-            outside_bnds = []
-            for pr, pm in paste_adjs:
-                for pb in (pr, pm):
-                    if pb.chrom == r.chrom and h_min < pb.pos < h_max:
-                        inside_bnds.append(pb)
-                    else:
-                        outside_bnds.append(pb)
-                        
-            # In a valid TRA_CUT, exactly 2 paste breakends lie inside the HEAL interval.
-            # Additionally, the 2 outside breakends must be adjacent (distance <= 1) 
-            # because they represent the single insertion point (sink).
-            if len(inside_bnds) == 2 and len(outside_bnds) == 2:
-                if outside_bnds[0].chrom == outside_bnds[1].chrom:
-                    if abs(outside_bnds[0].pos - outside_bnds[1].pos) <= 1:
-                        heal_adj = (r, m)
-                        valid_sink_bnds = outside_bnds
-                        # Note: For intra-chromosomal transpositions, there are 2 mathematically 
-                        # identical interpretations (cut B paste after C == cut C paste before B).
-                        # We just take the first one we find that is valid.
-                        break
-                
-        if not heal_adj:
+        if not intra_adjs:
             return None
+        
+        # Determine Heal adjacency:
+        # If 1 intrachromosomal adjacency -> it is Heal (inter-chromosomal case).
+        # If 2 or 3 intrachromosomal adjacencies -> Heal has the MINIMUM span among intrachromosomal pairs.
+        if len(intra_adjs) == 1:
+            _, r, m = intra_adjs[0]
+            heal_adj = (r, m)
+        else:
+            _, r, m = min(intra_adjs, key=lambda t: abs(t[1].pos - t[2].pos))
+            heal_adj = (r, m)
+        
+        # VALIDATION: Verify the Heal span is consistent (span > 1, i.e., L >= 1).
+        h_min = min(heal_adj[0].pos, heal_adj[1].pos)
+        h_max = max(heal_adj[0].pos, heal_adj[1].pos)
+        if h_max - h_min <= 1:
+            return None  # Degenerate event, skip
+
             
         source_chrom = heal_adj[0].chrom
         h_min = min(heal_adj[0].pos, heal_adj[1].pos)
