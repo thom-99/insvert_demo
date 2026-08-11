@@ -29,15 +29,9 @@ variants:
       min_length: 50
       max_length: 100000
 
-<<<<<<< HEAD
 
   DUP:                                # tandem duplications
     count: 100            
-=======
-  # Tandem Duplications
-  DUP:                               
-    count: 50            
->>>>>>> experiments
     distribution: "normal"
     parameters:
       median_length: 2000
