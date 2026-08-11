@@ -89,7 +89,6 @@ for the final version:
 
 
 **main features**
-- implement SNPs
  
 **bugs**
 

@@ -70,7 +70,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                 processed_sinks = set()
 
                 for chrom in ref.references:
-                    print(f"Processing {chrom} (Haplotype {haplotype+1})...", end="\r")
+                    progress.update(task, description=f"Processing {chrom} (Haplotype {haplotype+1})...")
 
                     if ploidy==1:
                         out_f.write(f">{chrom}\n")
@@ -127,7 +127,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             sv_label = var.info.get("SVTYPE", "UNKNOWN")
                             assigned_haps = [str(idx + 1) for idx, allele in enumerate(shuffled_gt) if allele == 1]
                             haps_str = ", ".join(assigned_haps)
-                            print(
+                            progress.console.print(
                                 f"WARNING: Variant '{var_id}' ({sv_label} at "
                                 f"{var.chrom}:{var.pos}) is unphased. Phasing "
                                 f"information is needed for correct haplotype "
@@ -198,7 +198,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             if svtype == 'INS':
                                 explicit_seq, warning = utils_ins.extract_explicit_ins_sequence(var)
                                 if warning:
-                                    print(f"\n{warning}")
+                                    progress.console.print(f"\n{warning}")
                                 
                                 if explicit_seq:
                                     ins_seq = explicit_seq

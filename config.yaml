@@ -30,7 +30,8 @@ variants:
       max_length: 100000
 
 
-  DUP:                                # tandem duplications
+  # Tandem Duplications
+  DUP:                                
     count: 100            
     distribution: "normal"
     parameters:
