@@ -82,7 +82,8 @@ inSVert has a decoupled architecture, designed so that its modules can be used a
 
 
 # TO DO
-
+build a folder /example_data with some toy genomes of different species (yeast, human, wheat) under 100 MBs and publish them on github 
+wiki: how TRAs and dDups are expected and represented, how streaming can allow to TRAs and dDups are expected and represented, how streaming can allow to achieve better memory performances,  
 
 for the final version:
 

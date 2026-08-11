@@ -83,7 +83,7 @@ parse_time_log() {
 # 1. RUN SIMULATE
 echo ""
 echo "[+] Step 1: Running inSVert simulate..."
-/usr/bin/time -v conda run -n demo inSVert simulate "$CONFIG" "$REF" -o "$SIM_VCF" 2>"$SIM_LOG"
+/usr/bin/time -v conda run -n demo inSVert simulate "$CONFIG" "$REF" --seed 1234 -o "$SIM_VCF" 2>"$SIM_LOG"
 
 # 2. RUN INSERT
 echo ""
