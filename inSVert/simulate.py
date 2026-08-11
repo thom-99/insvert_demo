@@ -237,7 +237,7 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
                     # 2. Track the positions
                     utils_sim.track_sv(sv_positions, chrom_dst, pos_dst, pos_dst + 1, gt)
                     if svtype == "TRA_CUT":
-                        utils_sim.track_sv(sv_positions, chrom_src, pos_src, pos_src + l, gt)
+                        utils_sim.track_sv(sv_positions, chrom_src, pos_src, pos_src + l + 1, gt)
                         
                     # 3. Generate and write BNDs
                     reverse_ratio = fakedict[svtype].get('reverse_ratio', 0.0)

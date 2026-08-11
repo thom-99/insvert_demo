@@ -111,3 +111,18 @@ def test_four_adjacencies_returns_none(make_bnd):
     P2 = make_bnd('chr2', 2, 'P2', ']chr1:1]A', 'P1')
     adjacencies = [(P1, P2)] * 4
     assert is_valid_tra('TEST', adjacencies) is None
+
+def test_tra_cut_intra_pos_dst_before_pos_src(make_bnd):
+    # Tests the problematic case where pos_dst (1,266,852) < pos_src (16,019,896)
+    # Under old logic, (P1, P2) was misidentified as HEAL pair due to ambiguous nesting.
+    # Under minimum span logic, (H1, H2) with span ~50k is correctly identified.
+    P1 = make_bnd('chr1', 1266852, 'CUT3.P1', 'T[chr1:16019897[', 'CUT3.P2', 'CUT3')
+    P2 = make_bnd('chr1', 16019897, 'CUT3.P2', ']chr1:1266852]A', 'CUT3.P1', 'CUT3')
+    P3 = make_bnd('chr1', 16070748, 'CUT3.P3', 'T[chr1:1266853[', 'CUT3.P4', 'CUT3')
+    P4 = make_bnd('chr1', 1266853, 'CUT3.P4', ']chr1:16070748]A', 'CUT3.P3', 'CUT3')
+    H1 = make_bnd('chr1', 16019896, 'CUT3.H1', 'T[chr1:16070749[', 'CUT3.H2', 'CUT3')
+    H2 = make_bnd('chr1', 16070749, 'CUT3.H2', ']chr1:16019896]A', 'CUT3.H1', 'CUT3')
+    adjacencies = [(P1, P2), (P3, P4), (H1, H2)]
+    res = is_valid_tra('CUT3', adjacencies)
+    assert res == ('TRA_CUT', 'chr1', (16019896, 16070748), 'chr1', 1266852, 16019896, False, True)
+
