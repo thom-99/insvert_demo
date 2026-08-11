@@ -152,6 +152,20 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                         # 2. Dispatch to utils_ins based on Type
                         svtype = var.info.get("SVTYPE")
                         
+                        # ── SNP HANDLING (Single-base substitution, no padding base) ──
+                        if svtype is None:
+                            ref_allele = var.ref
+                            alt_alleles = var.alts
+                            if (ref_allele and alt_alleles and 
+                                len(ref_allele) == 1 and len(alt_alleles) == 1 and 
+                                len(str(alt_alleles[0])) == 1):
+                                
+                                # Write ALT nucleotide in place of reference base
+                                writer.write(str(alt_alleles[0]))
+                                ref_pos = start + 1
+                                continue
+
+                        
                         # comoute the length of the variant, BNDs are excluded as they do not have a svlength
                         if svtype != "BND":
                             svlen = var.info.get("SVLEN")

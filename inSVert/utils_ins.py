@@ -470,7 +470,6 @@ def prepare_vcf(vcf_path):
 
 
 
-
 ### FUNCTION TO PARSE ORIENTATION OF BNDs IN A VCF using regex ###
 
 
