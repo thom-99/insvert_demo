@@ -4,9 +4,10 @@ import pysam
 
 ### INPUT VCF VALIDATION ###
 
-def validate_vcf(vcf_path, fasta_path):
+def validate_vcf(vcf_path, fasta_path, target_ploidy=None):
     """
-    Validates the input VCF for structural integrity and compatibility with the reference FASTA.
+    Validates the input VCF for structural integrity, compatibility with the reference FASTA,
+    and genotype ploidy.
     """
     if not os.path.exists(vcf_path):
         raise FileNotFoundError(f"Input VCF file not found at: {vcf_path}")
@@ -36,8 +37,22 @@ def validate_vcf(vcf_path, fasta_path):
                             f"VCF expects {contig_record.length}bp, but FASTA has {fasta_length}bp. "
                             f"Are you sure the VCF was called against this exact FASTA?"
                         )
+
+            # Check 3: Check ploidy compatibility if target_ploidy is specified
+            if target_ploidy is not None:
+                for rec in vcf:
+                    if rec.samples:
+                        gt = rec.samples[0].get('GT')
+                        if gt is not None and len(gt) > 0 and len(gt) != target_ploidy:
+                            raise ValueError(
+                                f"Ploidy mismatch: VCF variant at {rec.chrom}:{rec.pos} "
+                                f"has a {len(gt)}-allele genotype (GT={rec.samples[0].get('GT')}), "
+                                f"but --ploidy {target_ploidy} was specified."
+                            )
+                        break
     except Exception as e:
         raise ValueError(f"VCF Validation Failed: {e}")
+
 
 
 

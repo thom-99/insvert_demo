@@ -152,7 +152,8 @@ def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants):
     # input validation
     try:
         input_validation.validate_fasta(reference)
-        input_validation.validate_vcf(vcf,reference)
+        input_validation.validate_vcf(vcf, reference, ploidy)
+
     
     except Exception as e:
         console.print(f"\n[bold red]Validation Error:[/bold red] {e}")

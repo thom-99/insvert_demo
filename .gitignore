@@ -4,10 +4,11 @@ inSVert/__pycache__
 .vscode/
 .BND-notes.txt
 .changes.txt
-.task_plan.md
+task_plan.md
 .inSVert_BND_synthesis
 .gemini/
-.techical_docs/
+technical_docs/
+.agents/
 
 # R history files
 .Rhistory

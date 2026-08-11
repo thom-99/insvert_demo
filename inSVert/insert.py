@@ -127,7 +127,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             sv_label = var.info.get("SVTYPE", "UNKNOWN")
                             assigned_haps = [str(idx + 1) for idx, allele in enumerate(shuffled_gt) if allele == 1]
                             haps_str = ", ".join(assigned_haps)
-                            progress.console.print(
+                            print(
                                 f"WARNING: Variant '{var_id}' ({sv_label} at "
                                 f"{var.chrom}:{var.pos}) is unphased. Phasing "
                                 f"information is needed for correct haplotype "
@@ -140,8 +140,9 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                                 continue
                         else:
                             # Phased: use existing logic
-                            if sample['GT'][haplotype] != 1:
-                                continue 
+                            if haplotype >= len(sample['GT']) or sample['GT'][haplotype] != 1:
+                                continue
+ 
 
 
 
