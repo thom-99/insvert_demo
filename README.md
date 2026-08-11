@@ -92,10 +92,10 @@ for the final version:
 - implement SNPs
  
 **bugs**
-- get to the bottom of variant overlaps, if needed rework the logic to parse TRAs 
 
 **quality of life**
 
+- implement optional argument in the simulate command to include only specific regions using a bed file (--include-only)
 - implement an optional argument to allow for the output of a .bed-like file in addition to the VCF for a more human readible variant log output 
 - add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name x
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
