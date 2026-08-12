@@ -228,7 +228,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             event_id = var.info.get('EVENT')
 
                             # ACTION: the 'CUT' i.e. source of cut & paste TRAs
-                            del_job = tra_cache["deletions"].get(chrom, {}).get(var.pos)
+                            del_job = tra_cache["deletions"].get(chrom, {}).get((var.pos, event_id))
                             # if there is a deletion job to carry out and I have not carried out before
                             if del_job and event_id not in processed_sources:
                                 length, _ = del_job
@@ -243,7 +243,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                                 continue
 
                             # ACTION: the 'PASTE' i.e. sink of the cut&paste or copy&paste TRAs
-                            ins_job = tra_cache["insertions"].get(chrom, {}).get(var.pos)
+                            ins_job = tra_cache["insertions"].get(chrom, {}).get((var.pos, event_id))
                             if ins_job and event_id not in processed_sinks:
                                 src_chr, s_start, s_end, is_inverted, attach_after, _ = ins_job
 

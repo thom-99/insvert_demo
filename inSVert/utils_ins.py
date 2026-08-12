@@ -336,10 +336,10 @@ def prefetch_translocations(vcf_path, ref_path):
         dict: A nested dictionary (Action Map) structured as:
             {
                 "deletions": { 
-                    chrom (str): { pos (int): (length (int), event_id (str)) }
+                    chrom (str): { (pos (int), event_id (str)): (length (int), event_id (str)) }
                 },
                 "insertions": { 
-                    chrom (str): { pos (int): (sequence (str), event_id (str)) }
+                    chrom (str): { (pos (int), event_id (str)): (sequence (str), event_id (str)) }
                 }
             }
         - 'deletions' trigger a reference skip (the "cut").
@@ -363,7 +363,8 @@ def prefetch_translocations(vcf_path, ref_path):
               f"Translocation reconstruction requires EVENT grouping. "
               f"Skipping these BND records.")
 
-    # Actions keyed by [chrom][pos] = (type, data, event_id)
+    # Actions keyed by [chrom][(pos, event_id)]. Position alone is not
+    # sufficient: distinct haplotype-specific events may share a coordinate.
     tra_map = {"deletions": defaultdict(dict), "insertions": defaultdict(dict)}
 
     for event_id, records in events.items():
@@ -385,10 +386,10 @@ def prefetch_translocations(vcf_path, ref_path):
         tra_len = s_end - s_start
 
         if tra_type == "TRA_CUT" and del_pos is not None:
-            tra_map["deletions"][src_chr][del_pos] = (tra_len, event_id)
+            tra_map["deletions"][src_chr][(del_pos, event_id)] = (tra_len, event_id)
         
         # Store coordinates for lazy loading: (src_chr, s_start, s_end, is_inverted, attach_after, event_id)
-        tra_map["insertions"][snk_chr][snk_pos] = (src_chr, s_start, s_end, is_inverted, attach_after, event_id)
+        tra_map["insertions"][snk_chr][(snk_pos, event_id)] = (src_chr, s_start, s_end, is_inverted, attach_after, event_id)
 
     vcf.close(); ref.close()
     return tra_map
