@@ -48,7 +48,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
     if unphased_count > 0:
         action = "Skipping" if skip_unphased else "Randomly assigning to haplotypes"
         print(
-            f"\n⚠ WARNING: {unphased_count} variant(s) in the VCF have unphased "
+            f"\n⚠ WARNING: {unphased_count} records in the VCF have unphased "
             f"genotypes (e.g., 0/1). Phased genotypes (e.g., 0|1) are required "
             f"for deterministic haplotype placement. {action}.\n"
         )
@@ -122,18 +122,6 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                                 random.shuffle(shuffled_gt)
                                 unphased_assignments[var_key] = shuffled_gt
 
-                            # Warn the user
-                            var_id = var.id if var.id else f"{var.chrom}:{var.pos}"
-                            sv_label = var.info.get("SVTYPE", "UNKNOWN")
-                            assigned_haps = [str(idx + 1) for idx, allele in enumerate(shuffled_gt) if allele == 1]
-                            haps_str = ", ".join(assigned_haps)
-                            print(
-                                f"WARNING: Variant '{var_id}' ({sv_label} at "
-                                f"{var.chrom}:{var.pos}) is unphased. Phasing "
-                                f"information is needed for correct haplotype "
-                                f"assignment. Randomly assigned to Haplotype(s) "
-                                f"{haps_str}."
-                            )
 
                             # Apply only if this haplotype got the ALT allele
                             if shuffled_gt[haplotype] != 1:
