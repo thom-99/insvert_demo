@@ -207,8 +207,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                                 ref_pos = utils_ins.apply_inversion(ref, chrom, ref_pos, svlen, writer)
                                     
                             elif svtype == 'DUP':
-                                sample_name = list(var.samples.keys())[0] if var.samples else None
-                                cn = var.samples[sample_name]['CN'] if sample_name else 2
+                                vcf_sample_name = list(var.samples.keys())[0] if var.samples else None
+                                cn = var.samples[vcf_sample_name]['CN'] if vcf_sample_name else 2
                                     
                                 ref_pos = utils_ins.apply_duplication(ref, chrom, ref_pos, svlen, cn, writer)
 
