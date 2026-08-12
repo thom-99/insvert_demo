@@ -38,18 +38,23 @@ def validate_vcf(vcf_path, fasta_path, target_ploidy=None):
                             f"Are you sure the VCF was called against this exact FASTA?"
                         )
 
-            # Check 3: Check ploidy compatibility if target_ploidy is specified
             if target_ploidy is not None:
                 for rec in vcf:
-                    if rec.samples:
-                        gt = rec.samples[0].get('GT')
-                        if gt is not None and len(gt) > 0 and len(gt) != target_ploidy:
-                            raise ValueError(
-                                f"Ploidy mismatch: VCF variant at {rec.chrom}:{rec.pos} "
-                                f"has a {len(gt)}-allele genotype (GT={rec.samples[0].get('GT')}), "
-                                f"but --ploidy {target_ploidy} was specified."
-                            )
-                        break
+
+                    # Check 3: presence of a sample 
+                    if not rec.samples:
+                        raise ValueError(f"VCF record at {rec.chrom}:{rec.pos} has no sample genotype.")
+
+                    # Check 4: presence of a genotype
+                    gt = rec.samples[0].get('GT')
+                    if gt is None or len(gt) == 0:
+                        raise ValueError(f"VCF record at {rec.chrom}:{rec.pos} has no GT value")
+
+                    # Check 5: ploidy matching with target_ploidy
+                    if len(gt) != target_ploidy:
+                        raise ValueError(f"Ploidy mismatch at {rec.chrom}:{rec.pos}, GT={gt} has {len(gt)} alleles but --ploidy {target_ploidy} was specified")
+                        
+
     except Exception as e:
         raise ValueError(f"VCF Validation Failed: {e}")
 
