@@ -106,3 +106,20 @@ def validate_bed(bed_path, fasta_path=None):
             if fasta_chroms and chrom not in fasta_chroms:
                 print(f"[Warning] BED line {line_num}: Chromosome '{chrom}' not in reference FASTA.")
     return True
+
+
+
+
+def validate_output_path(reference_path, output_path):
+    """
+    Ensures that the output FASTA does not overwrite the input reference FASTA.
+    """
+    reference_real = os.path.realpath(os.path.abspath(reference_path))
+    output_real = os.path.realpath(os.path.abspath(output_path))
+
+    if reference_real == output_real:
+        raise ValueError(
+            "Output FASTA cannot be the same file as the reference FASTA. "
+            "Please specify a different output path with -o/--output.")
+
+    return True

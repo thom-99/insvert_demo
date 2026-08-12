@@ -95,7 +95,6 @@ for the final version:
 - reason about multi allelic variants
 
 **bugs**
-- insted of printing a warning for every unphased variant, print a single warnign at the end counting up all the unphased variants. Slight performance optimization + the run feels less buggy
 - check for VCF reference and insertion destination reference consistency within input validation module
 
 **quality of life**

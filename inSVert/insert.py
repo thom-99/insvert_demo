@@ -53,8 +53,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
         print(
             f"\n⚠ WARNING: {unphased_count} records in the VCF have unphased "
             f"genotypes (e.g., 0/1). Phased genotypes (e.g., 0|1) are required "
-            f"for deterministic haplotype placement. {action}.\n"
-        )
+            f"for deterministic haplotype placement. {action}.\n")
 
     # Cache unphased assignments ONCE across all haplotype passes
     unphased_assignments = {}

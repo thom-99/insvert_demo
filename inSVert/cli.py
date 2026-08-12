@@ -159,6 +159,7 @@ def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants, sampl
     try:
         input_validation.validate_fasta(reference)
         input_validation.validate_vcf(vcf, reference, ploidy)
+        input_validation.validate_output_path(reference,output)
 
     
     except Exception as e:
