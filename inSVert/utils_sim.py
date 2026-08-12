@@ -207,9 +207,31 @@ def parse_bed(bed_path:str):
                 excluded_ranges[chrom] = []
             excluded_ranges[chrom].append((start, end))
 
-    # Sort intervals by start position for bisect to work
+    # Sort intervals by start position for bisect to work and merge overlapping intervals
     for chrom in excluded_ranges:
         excluded_ranges[chrom].sort()
+
+        merged_ranges = []
+        for current in excluded_ranges[chrom]:
+
+            if not merged_ranges:
+                # merged_ranges empty, set the first interval as starting point
+                merged_ranges.append(current) 
+            else:
+                # compare the current intyerval with the last interval in merged_intervals
+                prev_start, prev_end = merged_ranges[-1]
+                current_start, current_end = current 
+
+                # check for overlaps or touching boundaries
+                if current_start <= prev_end:
+                    # overlap, merge into one range
+                    merged_ranges[-1] = (prev_start, max(prev_end,current_end))
+                else:
+                    # no overlap, add new range
+                    merged_ranges.append(current)
+
+        excluded_ranges[chrom] = merged_ranges
+
     
     return excluded_ranges
 

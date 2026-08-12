@@ -89,6 +89,7 @@ for the final version:
 
 
 **main features**
+- implement MNPs
  
 **bugs**
 

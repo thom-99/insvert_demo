@@ -146,13 +146,12 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
 
 
-                        start = var.pos - 1 #VCF is 1-indexed, python is 0-indexed
+                        start = var.pos - 1 # VCF is 1-indexed, python is 0-indexed
 
-                        # Resolve svtype early so BNDs can be exempted from the
-                        # linear overlap check below.
+                        # Resolve svtype early so BNDs can be exempted from the linear overlap check below.
                         svtype = var.info.get("SVTYPE")
 
-                        # Check Overlap only for non-BND SVs.
+                        # Check Overlap only for non-BND variants.
                         # BND companion records intentionally share coordinates with
                         # their active sibling (the one that advances ref_pos). They
                         # are already deduplicated via processed_sources/processed_sinks,
@@ -161,7 +160,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             skipped_positions.add((haplotype, chrom, var.pos))
                             continue
 
-                        # 1. Write Reference up to this SV
+                        # 1. Write Reference up to this variant
                         if start > ref_pos:
                             chunk = ref.fetch(chrom, ref_pos, start)
                             writer.write(chunk)
@@ -169,19 +168,23 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                         
                         # 2. Dispatch to utils_ins based on Type
                         
-                        # ── SNP HANDLING (Single-base substitution, no padding base) ──
-                        if svtype is None:
-                            ref_allele = var.ref
-                            alt_alleles = var.alts
-                            if (ref_allele and alt_alleles and 
-                                len(ref_allele) == 1 and len(alt_alleles) == 1 and 
-                                len(str(alt_alleles[0])) == 1):
-                                
-                                # Write ALT nucleotide in place of reference base
-                                writer.write(str(alt_alleles[0]))
-                                ref_pos = start + 1
-                                continue
+                        ### SMALL VARIANTS HANDLING (SNPs, MNPs, indels) ###
 
+                        if svtype is None:
+
+                            ref_allele = var.ref or ""
+                            alt_str = str(var.alts[0]) if var.alts else ""
+
+                            if not ref_allele or not alt_str:
+                                continue # malformed record, skipping
+
+                            # Write ALT str, consume REF lenght from reference
+                            writer.write(alt_str)
+                            ref_pos = start + len(ref_allele)
+                            continue 
+
+
+                        ### STRUCTURAL VARIANTS HANDLING (INS, DEL, INV, DUP, BNDs) ###
                         
                         # comoute the length of the variant, BNDs are excluded as they do not have a svlength
                         if svtype != "BND":
@@ -195,7 +198,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                                 writer.write(ref.fetch(chrom, start, start + 1))
                                 ref_pos = start + 1
 
-                            # VARIANT PROCESSING
+                            # SV PROCESSING
                             if svtype == 'INS':
                                 explicit_seq, warning = utils_ins.extract_explicit_ins_sequence(var)
                                 if warning:
