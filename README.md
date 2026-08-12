@@ -71,6 +71,8 @@ optional arguments:
 --gc : GC ratio used when generating insertion sequences, the default is set to the human GC content (0.41)
 
 --skip-unphased-variants : with this option unphased variants are skipped entirely, rather than assigned to a random haplotype.
+
+--sample-name : name of the organism, written in the output fasta header instead of generic 'Sample#Haplotype#Contig'
 ```
 
 
@@ -100,7 +102,6 @@ for the final version:
 
 - implement optional argument in the simulate command to include only specific regions using a bed file (--include-only)
 - implement an optional argument to allow for the output of a .bed-like file in addition to the VCF for a more human readible variant log output 
-- add an optional parameter to the simulation to replace 'Sample' in 'Sample#Hap#Contig' with a custom name x
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
 - add a --split-haplotypes flag in the insert command to generate [ploidy] haplotypes in fasta format 
 - modify BND formatting to include PAIRID in addition to already present MATEI- modify BND formatting to include PAIRID in addition to already present MATEID

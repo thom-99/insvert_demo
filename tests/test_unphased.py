@@ -94,6 +94,22 @@ def test_upfront_count_summary(sample_ref, temp_dir, capsys):
 
     assert "2 records in the VCF have unphased genotypes" in captured
 
+def test_duplication_without_cn_uses_default_copy_number(sample_ref, temp_dir, capsys):
+    vcf_path = temp_dir / "dup_no_cn.vcf"
+    out_fasta = temp_dir / "out.fa"
+    create_vcf(vcf_path, [
+        "chr1\t100\tdup1\tA\t<DUP>\t.\tPASS\tSVTYPE=DUP;SVLEN=10;END=110\tGT\t1|0"
+    ])
+
+    insert.run(0.41, str(sample_ref), str(vcf_path), ploidy=2, output_fasta=str(out_fasta))
+    captured = capsys.readouterr().out
+
+    assert "1 DUP record(s)" in captured
+    assert "default CN=2" in captured
+    with pysam.FastaFile(str(out_fasta)) as output:
+        assert len(output.fetch("Sample#H1#chr1")) == 1010
+        assert len(output.fetch("Sample#H2#chr1")) == 1000
+
 def test_bnd_event_consistency(sample_ref, temp_dir, capsys, monkeypatch):
     vcf_path = temp_dir / "unphased_bnd.vcf"
     out_fasta = temp_dir / "out.fa"

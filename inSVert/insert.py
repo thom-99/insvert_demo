@@ -35,14 +35,17 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
     vcf = pysam.VariantFile(sorted_vcf_path)
     tra_cache = utils_ins.prefetch_translocations(sorted_vcf_path, ref_fasta)
     
-    # Combined pass: count total variants AND detect unphased heterozygous genotypes
+    # Combined pass: count variants, unphased genotypes, and DUPs lacking CN.
     total_variants = 0
     unphased_count = 0
+    missing_cn_dup_count = 0
     for rec in vcf:
         total_variants += 1
         gt = rec.samples[0]['GT']
         if not rec.samples[0].phased and len(set(gt)) > 1:
             unphased_count += 1
+        if rec.info.get("SVTYPE") == "DUP" and rec.samples[0].get("CN") is None:
+            missing_cn_dup_count += 1
     total_steps = total_variants * ploidy 
 
     if unphased_count > 0:
@@ -208,7 +211,9 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                                     
                             elif svtype == 'DUP':
                                 vcf_sample_name = list(var.samples.keys())[0] if var.samples else None
-                                cn = var.samples[vcf_sample_name]['CN'] if vcf_sample_name else 2
+                                cn = var.samples[vcf_sample_name].get('CN') if vcf_sample_name else None
+                                if cn is None:
+                                    cn = 2
                                     
                                 ref_pos = utils_ins.apply_duplication(ref, chrom, ref_pos, svlen, cn, writer)
 
@@ -259,7 +264,9 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                     writer.flush()
     
     if skipped_positions:
-        print(f"Warning: skipped {len(skipped_positions)} variant records due to coordinate overlaps.")
+        print(f"Warning: skipped {len(skipped_positions)} variant record(s) due to coordinate overlaps.")
+    if missing_cn_dup_count:
+        print(f"WARNING: {missing_cn_dup_count} DUP record(s) had no copy-number (CN) value and were applied with the default CN=2.")
 
     vcf.close()
     ref.close()
