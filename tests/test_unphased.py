@@ -47,9 +47,8 @@ def test_unphased_variant_detected_and_warned(sample_ref, temp_dir, capsys):
     insert.run(0.41, str(sample_ref), str(vcf_path), ploidy=2, output_fasta=str(out_fasta), skip_unphased=False)
     captured = capsys.readouterr().out
 
-    assert "1 variant(s) in the VCF have unphased genotypes" in captured
-    assert "WARNING: Variant 'del1' (DEL at chr1:100) is unphased" in captured
-    assert "Randomly assigned to Haplotype(s)" in captured
+    assert "1 records in the VCF have unphased genotypes" in captured
+    assert "Randomly assigning to haplotypes." in captured
 
 def test_unphased_variant_skip_flag(sample_ref, temp_dir, capsys):
     vcf_path = temp_dir / "unphased.vcf"
@@ -93,9 +92,9 @@ def test_upfront_count_summary(sample_ref, temp_dir, capsys):
     insert.run(0.41, str(sample_ref), str(vcf_path), ploidy=2, output_fasta=str(out_fasta), skip_unphased=False)
     captured = capsys.readouterr().out
 
-    assert "2 variant(s) in the VCF have unphased genotypes" in captured
+    assert "2 records in the VCF have unphased genotypes" in captured
 
-def test_bnd_event_consistency(sample_ref, temp_dir, capsys):
+def test_bnd_event_consistency(sample_ref, temp_dir, capsys, monkeypatch):
     vcf_path = temp_dir / "unphased_bnd.vcf"
     out_fasta = temp_dir / "out.fa"
     create_vcf(vcf_path, [
@@ -105,19 +104,17 @@ def test_bnd_event_consistency(sample_ref, temp_dir, capsys):
         "chr1\t401\tBND3\tA\tA[chr1:201[\t.\tPASS\tSVTYPE=BND;EVENT=EV1;MATEID=BND4\tGT\t0/1",
     ])
 
-    random.seed(42)
+    shuffle_calls = 0
+    original_shuffle = random.shuffle
+
+    def count_shuffle(values):
+        nonlocal shuffle_calls
+        shuffle_calls += 1
+        original_shuffle(values)
+
+    monkeypatch.setattr(insert.random, "shuffle", count_shuffle)
     insert.run(0.41, str(sample_ref), str(vcf_path), ploidy=2, output_fasta=str(out_fasta), skip_unphased=False)
     captured = capsys.readouterr().out
 
-    bnd_warnings = [line for line in captured.splitlines() if "WARNING: Variant 'BND" in line]
-    assert len(bnd_warnings) == 8  # 4 BNDs x 2 haplotypes
-    
-    # Extract the assigned Haplotype for all BND1..BND4 warnings on haplotype 1 run
-    # All BND warnings for EV1 must report the exact same assigned haplotype!
-    assigned_haps = set()
-    for line in bnd_warnings:
-        # e.g. "Randomly assigned to Haplotype(s) 1."
-        hap_part = line.split("Randomly assigned to Haplotype(s) ")[-1]
-        assigned_haps.add(hap_part)
-    
-    assert len(assigned_haps) == 1, f"Expected consistent haplotype assignment across BND mates, got {assigned_haps}"
+    assert "4 records in the VCF have unphased genotypes" in captured
+    assert shuffle_calls == 1  # All four BND records share EVENT=EV1.

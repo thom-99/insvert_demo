@@ -26,7 +26,7 @@ class BufferWriter:
             self.fh.write(self.buffer + '\n')
             self.buffer = ""
 
-def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=False):
+def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=False, sample_name="Sample"):
     random.seed(42)
 
     print(f'Streaming variants from {vcf_file}...')
@@ -75,7 +75,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                     if ploidy==1:
                         out_f.write(f">{chrom}\n")
                     else:
-                        out_f.write(f">Sample#H{haplotype+1}#{chrom}\n")
+                        out_f.write(f">{sample_name}#H{haplotype+1}#{chrom}\n")
                     
                     try:
                         chrom_variants = list(vcf.fetch(chrom))
