@@ -160,33 +160,33 @@ class Breakend(StructuralVariant):
                 f"{self.qual}\t{self.filter}\t{info}\tGT\t{self.genotype}")
 
 
-class SNP:
-    """
-    Represents a Single-Nucleotide Polymorphism (SNP) in VCF 4.2 format.
-    
-    Unlike StructuralVariant subclasses, SNPs have no padding base, no SVTYPE,
-    no SVLEN, and no END field. The REF and ALT are both single nucleotides,
-    and POS points directly to the base being substituted.
-    """
-    
-    def __init__(self, chrom: str, pos: int, id: str, genotype: str, ref_base: str, alt_base: str):
+class Polymorphism:
+    """Represents an SNP or MNP in VCF 4.2 format."""
+
+    def __init__(self, chrom: str, pos: int, id: str, genotype: str, ref_seq: str, alt_seq: str):
+        if not ref_seq or not alt_seq:
+            raise ValueError("Polymorphism REF and ALT sequences must not be empty")
+        if len(ref_seq) != len(alt_seq):
+            raise ValueError("Polymorphism REF and ALT sequences must have equal lengths")
+
         self.chrom = chrom
-        self.pos = pos          # 1-indexed VCF position of the substituted base
+        self.pos = pos
         self.id = id
         self.genotype = genotype
-        self.ref = ref_base     # Single reference nucleotide (A, C, G, or T)
-        self.alt = alt_base     # Single alternate nucleotide
+        self.ref = ref_seq
+        self.alt = alt_seq
+        self.variant_type = "SNP" if len(ref_seq) == 1 else "MNP"
         self.qual = "."
         self.filter = "PASS"
-    
+
     def get_end(self) -> int:
-        """SNP occupies a single position."""
-        return self.pos
-    
+        """Return the 1-indexed inclusive end position."""
+        return self.pos + len(self.ref) - 1
+
     def format(self) -> str:
-        """Formats the SNP as a VCF 4.2 line with VT=SNP in the INFO column."""
+        """Format the polymorphism as an explicit VCF record."""
         return (f"{self.chrom}\t{self.pos}\t{self.id}\t{self.ref}\t{self.alt}\t"
-                f"{self.qual}\t{self.filter}\tVT=SNP\tGT\t{self.genotype}")
+                f"{self.qual}\t{self.filter}\tVT={self.variant_type}\tGT\t{self.genotype}")
 
 
 

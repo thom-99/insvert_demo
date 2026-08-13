@@ -40,18 +40,18 @@ def parse_config(config_path):
     
     # Iterate through the variants defined in YAML
     for sv_type, settings in config['variants'].items():
-        # SNP: ratio-based, no length distribution
-        if sv_type == 'SNP':
-            snp_ratio = settings.get('ratio')
-            if snp_ratio is None:
-                raise ValueError("Config Error: SNP requires a 'ratio' parameter (e.g., 0.0001)")
-            if not (0.0 < snp_ratio < 1.0):
-                raise ValueError(f"Config Error: SNP 'ratio' must be between 0 and 1, got {snp_ratio}")
+        # DNA polymorphisms are ratio-based and do not use a length distribution.
+        if sv_type in ('SNP', 'MNP'):
+            ratio = settings.get('ratio')
+            if ratio is None:
+                raise ValueError(f"Config Error: {sv_type} requires a 'ratio' parameter (e.g., 0.0001)")
+            if not (0.0 < ratio < 1.0):
+                raise ValueError(f"Config Error: {sv_type} 'ratio' must be between 0 and 1, got {ratio}")
             tstv_ratio = settings.get('tstv_ratio', 2.0)
             if tstv_ratio < 0:
-                raise ValueError(f"Config Error: SNP 'tstv_ratio' must be >= 0, got {tstv_ratio}")
-            sv_data['SNP'] = {
-                'ratio': snp_ratio,
+                raise ValueError(f"Config Error: {sv_type} 'tstv_ratio' must be >= 0, got {tstv_ratio}")
+            sv_data[sv_type] = {
+                'ratio': ratio,
                 'tstv_ratio': tstv_ratio
             }
             continue
@@ -482,6 +482,21 @@ def pick_snp_alt(ref_base: str, tstv_ratio: float):
     else:
         return random.choice(TRANSVERSIONS[ref])
 
+
+
+MNP_LENGTHS = [2, 3, 4]
+MNP_WEIGHTS = [0.75, 0.20, 0.05]
+
+def pick_mnp_length():
+    """Select an MNP length from the internal weighted distribution."""
+    return random.choices(MNP_LENGTHS, weights=MNP_WEIGHTS, k=1)[0]
+
+def pick_mnp_alt(ref_seq: str, tstv_ratio: float):
+    """Generate an equal-length alternate sequence for an MNP."""
+    alt_bases = [pick_snp_alt(base, tstv_ratio) for base in ref_seq]
+    if any(base is None for base in alt_bases):
+        return None
+    return ''.join(alt_bases)
 
 
 def fetch_ref_span(chrom, start_1idx, end_1idx, ref_fasta):

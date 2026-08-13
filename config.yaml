@@ -3,10 +3,16 @@ genome:
   heterozygosity: 0.5 # Probability that any given copy carries the variant
 
 variants:
+
   # Single-Nucleotide Polymorphisms
   SNP:
     ratio: 0.0001          # SNP density: 1 per 10,000 bp
     tstv_ratio: 2.0        # Transition/Transversion ratio (~2.0 for human genomes)
+
+  # Multi-Nucleotide Polymorphisms
+  MNP:
+    ratio: 0.0001          
+    tstv_ratio: 2.0        
 
   # Deletions
   DEL:
@@ -54,7 +60,7 @@ variants:
 
   # Copy & Paste traslocations / Interspersed Duplications
   TRA_COPY:
-    count: 100
+    count: 10000
     distribution: "normal"   
     reverse_ratio: 0.2   # Probability of being spawned in reverse orientation 
     parameters:
@@ -65,7 +71,7 @@ variants:
 
   # Cut & Paste traslocations
   TRA_CUT:
-    count: 100
+    count: 10000
     distribution: "normal"   
     reverse_ratio: 0.2   # Probability of being spawned in reverse orientation 
     parameters:

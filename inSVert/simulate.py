@@ -47,7 +47,7 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
         print("Building SVs...")
         ref_fasta = pysam.FastaFile(fasta_path)
 
-        sv_types = [k for k in fakedict if k != 'SNP']
+        sv_types = [k for k in fakedict if k not in ('SNP', 'MNP')]
         for svtype in sv_types:
             if svtype == 'INS':
                 for l in fakedict[svtype]['lengths']:
@@ -252,53 +252,69 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
                         vcf.write(bnd.format() + '\n')
 
         # ---------------------------------------------------------------
-        # SNP SIMULATION (Per-chromosome uniform density)
+        # DNA POLYMORPHISM SIMULATION (Per-chromosome uniform density)
         # ---------------------------------------------------------------
-        if "SNP" in fakedict:
-            snp_ratio = fakedict['SNP']['ratio']
-            tstv_ratio = fakedict['SNP'].get('tstv_ratio', 2.0)
-            
-            print(f"Generating SNPs (ratio={snp_ratio}, Ts/Tv={tstv_ratio})...")
-            
-            snp_count = 0
-            total_skipped = 0
-            
-            for chrom, chrom_length in zip(chroms, lengths):
-                n_snps_chrom = int(chrom_length * snp_ratio)
-                if n_snps_chrom == 0:
-                    continue
-                
-                for i in range(n_snps_chrom):
-                    placed = False
-                    for attempt in range(3):
-                        pos = utils_sim.select_pos(chrom_length)
-                        gt = utils_sim.generate_genotype(ploidy, heterozygosity)
-                        
-                        if (utils_sim.overlaps(chrom, pos, pos + 1, gt, sv_positions) or
-                            utils_sim.overlaps_excluded_region(chrom, pos, pos + 1, excluded_regions)):
-                            continue
-                        
-                        ref_base = utils_sim.fetch_ref_base(chrom, pos, ref_fasta).upper()
-                        alt_base = utils_sim.pick_snp_alt(ref_base, tstv_ratio)
-                        if alt_base is None:
-                            continue  # Skip non-ACGT bases (N, etc.)
-                        
-                        placed = True
-                        break
-                    
-                    if not placed:
-                        total_skipped += 1
+
+        polymorphism_types = [variant_type for variant_type in ('SNP', 'MNP') if variant_type in fakedict]
+        if polymorphism_types:
+            print("Generating DNA polymorphisms...")
+
+            polymorphism_count = 0  # combined count used in the final log message
+            total_skipped = 0       # candidates not placed after all retry attempts
+
+            for variant_type in polymorphism_types:
+                ratio = fakedict[variant_type]['ratio']
+                tstv_ratio = fakedict[variant_type].get('tstv_ratio', 2.0)
+
+                for chrom, chrom_length in zip(chroms, lengths):
+
+                    # defining the number of records per chrom
+                    n_variants_chrom = int(chrom_length * ratio)
+                    if n_variants_chrom == 0:
                         continue
-                    
-                    snp_count += 1
-                    snp_id = f'inSVert.SNP.{snp_count}'
-                    snp = VariantObjects.SNP(chrom, pos, snp_id, gt, ref_base, alt_base)
-                    
-                    # Track single-base interval [pos, pos + 1)
-                    utils_sim.track_sv(sv_positions, chrom, pos, pos + 1, gt)
-                    vcf.write(snp.format() + '\n')
-            
-            print(f"Placed {snp_count} SNPs across {len(chroms)} contig(s) ({total_skipped} skipped)")
+
+                    for _ in range(n_variants_chrom):
+                        placed = False
+                        for _ in range(3):
+
+                            # SNPs always replace one base. 
+                            # MNP lengths are sampled from the internal weighted distribution in utils_sim.
+                            allele_length = 1 if variant_type == 'SNP' else utils_sim.pick_mnp_length()
+
+                            pos = utils_sim.select_pos(chrom_length - allele_length + 1)
+                            end = pos + allele_length
+                            gt = utils_sim.generate_genotype(ploidy, heterozygosity)
+
+                            if (utils_sim.overlaps(chrom, pos, end, gt, sv_positions) or
+                                utils_sim.overlaps_excluded_region(chrom, pos, end, excluded_regions)):
+                                continue
+
+                            ref_seq = utils_sim.fetch_ref_span(chrom, pos, end - 1, ref_fasta)
+                            if variant_type == 'SNP':
+                                alt_seq = utils_sim.pick_snp_alt(ref_seq, tstv_ratio)
+                            else:
+                                alt_seq = utils_sim.pick_mnp_alt(ref_seq, tstv_ratio)
+                            if alt_seq is None:
+                                # Non-ACGT reference sequence cannot be mutated with the Ts/Tv model; try a different location.
+                                continue
+
+                            placed = True
+                            break
+
+                        if not placed:
+                            total_skipped += 1
+                            continue
+
+                        polymorphism_count += 1
+
+                        # write the SNP/MNP 
+                        polymorphism_id = f'inSVert.{variant_type}.{polymorphism_count}'
+                        polymorphism = VariantObjects.Polymorphism(chrom, pos, polymorphism_id, gt, ref_seq, alt_seq)
+
+                        utils_sim.track_sv(sv_positions, chrom, pos, end, gt)
+                        vcf.write(polymorphism.format() + '\n')
+
+            print(f"Placed {polymorphism_count} DNA polymorphisms across {len(chroms)} contig(s) ({total_skipped} skipped)")
 
 
 
