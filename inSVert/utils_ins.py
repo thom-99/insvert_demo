@@ -371,16 +371,45 @@ def prefetch_translocations(vcf_path, ref_path):
         # Helper to pair BNDs by MATEID
         adjacencies = []
         seen = set()
+        invalid_reason = None
+
         for r in records:
-            if r.id not in seen:
-                mate = next((m for m in records if m.id == r.info.get("MATEID")[0]), None)
-                if mate: 
-                    adjacencies.append((r, mate))
-                    seen.update([r.id, mate.id])
+            if r.id in seen:
+                continue # skip BNDs that have been already paired
+
+            # MATEID is required to reconstruct adjacencies 
+            mate_ids = r.info.get("MATEID")
+
+            if not mate_ids:
+                invalid_reason = (f"BND {r.id or f'{r.chrom}:{r.pos}'} in EVENT={event_id} has no MATEID")
+                break
+
+            # pysam might return the info field as a tuple, normalize to a single MATEID
+            mate_id = mate_ids[0] if isinstance(mate_ids, tuple) else mate_ids
+            # look for the mate among all BNDs belonging to the same event
+            mate = next((m for m in records if m.id == mate_id), None)
+
+            if mate is None:
+                invalid_reason = (f"BND {r.id or f'{r.chrom}:{r.pos}'} in EVENT={event_id} references a missing mate '{mate_id}")
+                break
+
+
+            # if nothing has broken by now, store the adjacency and mark both records as processed
+            adjacencies.append((r,mate))
+            seen.update([r.id, mate.id])
+
+
+        # if any invalid reason is present, skip event and inform user
+        if invalid_reason:
+            print(f"WARNING: {invalid_reason}. Skipping this BND event.")
+            continue 
+
         
         # Check if the translocation is valid and categorize it
         res = is_valid_tra(event_id, adjacencies)
-        if not res: continue
+        if not res:
+            print(f"WARNING: BND EVENT={event_id} could not be reconstructed as a valid traslocation. SKipping this BND event.")
+            continue
         
         tra_type, src_chr, (s_start, s_end), snk_chr, snk_pos, del_pos, is_inverted, attach_after = res
         tra_len = s_end - s_start

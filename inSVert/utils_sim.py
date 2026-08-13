@@ -290,7 +290,7 @@ def select_chr(chroms:list, lengths:list):
 SELECTS A RANDOM POSITION ALONG THE SPECIFIED CHROMSOME
 optionally it can avoid choosing positions too close to the chr end
 '''
-def select_pos(length, buffer=1000):
+def select_pos(length, buffer=0):
 
     if buffer > length/10:
         raise ValueError(f'edge buffer :{buffer} is too big, try decreasing it')
