@@ -77,6 +77,7 @@ def simulate_cmd(config, reference, output, seed, exclude, non_symbolic):
     try:
         input_validation.validate_fasta(reference)
         input_validation.validate_bed(exclude, reference)
+        input_validation.validate_config(config)
         console.print("[bold green]✓ Inputs verified successfully![/bold green]")
 
     except Exception as e:

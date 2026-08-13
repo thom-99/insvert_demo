@@ -73,6 +73,8 @@ optional arguments:
 --skip-unphased-variants : with this option unphased variants are skipped entirely, rather than assigned to a random haplotype.
 
 --sample-name : name of the organism, written in the output fasta header instead of generic 'Sample#Haplotype#Contig'
+
+--split-haplotypes : instead of a single output fasta file, split it into the [--ploidy] distinct haplotypes (ex: for ploidy=2 --> output_hap1.fa + output_hap2.fa) 
 ```
 
 
@@ -100,7 +102,6 @@ for the final version:
 - implement optional argument in the simulate command to include only specific regions using a bed file (--include-only)
 - implement an optional argument to allow for the output of a .bed-like file in addition to the VCF for a more human readible variant log output 
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
-- add a --split-haplotypes flag in the insert command to generate [ploidy] haplotypes in fasta format 
 - modify BND formatting to include PAIRID in addition to already present MATEI- modify BND formatting to include PAIRID in addition to already present MATEID
 
 **performance optimizations**
