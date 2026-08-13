@@ -1,0 +1,78 @@
+genome:
+  ploidy: 2
+  heterozygosity: 0.6 # Fraction of emitted variants present on some, but not all, haplotypes.
+
+variants:
+
+  # Single-Nucleotide Polymorphisms
+  SNP:
+    ratio: 0.0001          # SNP density: 1 per 10,000 bp
+    tstv_ratio: 2.0        # Transition/Transversion ratio (~2.0 for human genomes)
+
+  # Multi-Nucleotide Polymorphisms
+  MNP:
+    ratio: 0.0001          
+    tstv_ratio: 2.0        
+
+  # Deletions
+  DEL:
+    count: 20      #n. of variants to simulate 
+    distribution: "pareto"   # type of distr. for variant lengths (pareto/normal)
+    parameters:
+      median_length: 5000      # Target median length in bp
+      min_length: 50        # minimum length of the variant
+      max_length: 100000     # maximum length of the variant
+
+  # Insertions 
+  INS:
+    count: 20
+    distribution: "pareto" 
+    parameters:
+      median_length: 5000
+      min_length: 50
+      max_length: 100000
+
+  # Tandem Duplications
+  DUP:                                
+    count: 15             
+    distribution: "normal"
+    parameters:
+      median_length: 2000
+      sigma: 200
+      min_length: 50
+      max_length: 5000
+    copy_number:           
+      min: 2
+      max: 5
+      weights: [0.7, 0.2, 0.05, 0.05] # Probability for CN=2, 3, 4, 5
+
+  # Inversions
+  INV:
+    count: 15
+    distribution: "pareto"   
+    parameters:
+      median_length: 50000
+      min_length: 1000
+      max_length: 100000
+
+  # Copy & Paste traslocations / Interspersed Duplications
+  TRA_COPY:
+    count: 40
+    distribution: "normal"   
+    reverse_ratio: 0.2   # Probability of being spawned in reverse orientation 
+    parameters:
+      median_length: 30000
+      sigma: 1000
+      min_length: 1000
+      max_length: 1000000
+
+  # Cut & Paste traslocations
+  TRA_CUT:
+    count: 40
+    distribution: "normal"   
+    reverse_ratio: 0.2   # Probability of being spawned in reverse orientation 
+    parameters:
+      median_length: 30000
+      sigma: 1000
+      min_length: 1000
+      max_length: 1000000

@@ -95,7 +95,6 @@ for the final version:
 **main features**
 
 **bugs**
-- check for VCF reference and insertion destination reference consistency within input validation module
 
 **quality of life**
 
