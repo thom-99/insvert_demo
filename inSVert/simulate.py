@@ -37,7 +37,7 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
 
     with open(output_file, 'w') as vcf:
 
-        header = utils_sim.buildheader(chroms, lengths, fasta_path)
+        header = utils_sim.buildheader(chroms, lengths, fasta_path, seed)
         print(f"Writing {output_file} VCF header")
         vcf.write(header)
 

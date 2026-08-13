@@ -1,6 +1,6 @@
 genome:
   ploidy: 2
-  heterozygosity: 0.5 # Probability that any given copy carries the variant
+  heterozygosity: 0.5 # Fraction of emitted variants present on some, but not all, haplotypes.
 
 variants:
 

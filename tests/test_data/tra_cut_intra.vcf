@@ -1,0 +1,15 @@
+##fileformat=VCFv4.2
+##source=inSVert_test
+##contig=<ID=chr1,length=10000>
+##contig=<ID=chr2,length=10000>
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakends">
+##INFO=<ID=EVENT,Number=1,Type=String,Description="ID of event associated with breakend">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE
+chr1	3000	CUT2.H1	T	T[chr1:4001[	.	PASS	SVTYPE=BND;MATEID=CUT2.H2;EVENT=CUT2	GT	0|1
+chr1	3001	CUT2.P2	A	]chr1:7000]A	.	PASS	SVTYPE=BND;MATEID=CUT2.P1;EVENT=CUT2	GT	0|1
+chr1	4000	CUT2.P3	T	T[chr1:7001[	.	PASS	SVTYPE=BND;MATEID=CUT2.P4;EVENT=CUT2	GT	0|1
+chr1	4001	CUT2.H2	A	]chr1:3000]A	.	PASS	SVTYPE=BND;MATEID=CUT2.H1;EVENT=CUT2	GT	0|1
+chr1	7000	CUT2.P1	T	T[chr1:3001[	.	PASS	SVTYPE=BND;MATEID=CUT2.P2;EVENT=CUT2	GT	0|1
+chr1	7001	CUT2.P4	A	]chr1:4000]A	.	PASS	SVTYPE=BND;MATEID=CUT2.P3;EVENT=CUT2	GT	0|1

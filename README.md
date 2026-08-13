@@ -26,7 +26,7 @@ pip install .
 
 ### inSVert simulate
 The first module simulates a custom set of structural variants such as Deletions, Insertions, Inversions, Tandem Duplications and Traslocations according to the user instructions provided in the config.yaml file. The user can choose to simulate variants according to a pareto distribution, which more closely reflects the natural distribution of variants (with fewer long variants and more short variants), or a normal distribution.  
-inSVert also takes into account polyploid organisms: the user uses the 'ploidy' and 'heterozygousity' parameters to instruct the simulate module about how many genome copies he intends to simulate the variants on (most likely this corresponds to the ploidy number of the organism of interest) and how likely it is to find a variant on a given copy, thus manipulating the probability of variants of being heterozygus (present only on one copy) or homozygous (present on multiple copies). 
+inSVert also takes into account polyploid organisms: the user uses the 'ploidy' and 'heterozygousity' parameters to instruct the simulate module about how many genome copies he intends to simulate the variants on (most likely this corresponds to the ploidy number of the organism of interest) and the probability of variants of being heterozygous (present only on one genome copy). 
 
 to simulate structural variants, simply type 
 ```

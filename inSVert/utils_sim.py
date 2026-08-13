@@ -306,12 +306,13 @@ def select_pos(length, buffer=0):
 BUILDS A COMPLETE HEADER FOR A VCF FILE
 given the chroms, lengths (easily accessible through read_fai it also builds contigs lines)
 '''
-def buildheader(chroms, lengths, reference_path=None):
+def buildheader(chroms, lengths, reference_path=None, seed=None):
 
     header_lines = []
 
     header_lines.append("##fileformat=VCFv4.2")
-    header_lines.append("##source=inSVert")
+    header_lines.append("##source=inSVert-0.1.0")
+    header_lines.append(f"##inSVert seed: {seed}")
     header_lines.append(f"##fileDate={datetime.date.today().strftime('%Y%m%d')}")
 
     # optional reference path
