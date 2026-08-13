@@ -389,22 +389,46 @@ def overlaps(chrom, start, end, genotype_str, sv_positions: dict):
     return False
 
 
-"""
-Generates a genotype string (e.g., '0|1|0') with PHASED variants based on ploidy and heterozygosity.
-Ensures that at least one allele is '1'
-"""
-def generate_genotype(ploidy:int, heterozygosity:float) -> str:
+def generate_genotype(ploidy: int, heterozygosity: float) -> str:
+    """
+    Generate a phased genotype for an emitted variant.
 
-    #randomly assign alleles based on heterozygosity prob
-    alleles = [1 if random.random() < heterozygosity else 0 for copy in range(ploidy)]
+    `heterozygosity` is the probability that the variant is present
+    on some, but not all, haplotypes.
 
-    #if all alleles are 0, we force at least one to be a 1
-    if sum(alleles) == 0:
-        random_idx = random.randint(0,ploidy-1)
-        alleles[random_idx] = 1
-    
-    #format the output as a VCF genotype string (ex. "0/1")
-    return "|".join(map(str,alleles))
+    The remaining probability, 1 - heterozygosity, produces a
+    homozygous-ALT genotype.
+
+    For polyploid heterozygous variants, the ALT dosage is currently
+    selected uniformly between 1 and ploidy - 1.
+    """
+    if isinstance(ploidy, bool) or not isinstance(ploidy, int) or ploidy < 1:
+        raise ValueError("Ploidy must be an integer >= 1")
+
+    if (isinstance(heterozygosity, bool)
+        or not isinstance(heterozygosity, (int, float))
+        or not 0.0 <= heterozygosity <= 1.0
+        ):
+        raise ValueError("Heterozygosity must be a number between 0.0 and 1.0")
+
+    # Every emitted variant is necessarily present on the only haplotype.
+    if ploidy == 1:
+        return "1"
+
+    # Decide whether the variant is heterozygous.
+    if random.random() < heterozygosity:
+        # Select one of the possible heterozygous ALT dosages.
+        dosage = random.randint(1, ploidy - 1)
+    else:
+        # Homozygous ALT: every haplotype carries the variant.
+        dosage = ploidy
+
+    # Randomly choose which haplotypes carry ALT.
+    carrier_indices = set(random.sample(range(ploidy), dosage))
+
+    alleles = ["1" if index in carrier_indices else "0" for index in range(ploidy)]
+
+    return "|".join(alleles)
 
 
 """
