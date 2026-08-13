@@ -24,8 +24,11 @@ pip install .
 ```
 # Usage
 
-### inSVert simulate
-The first module simulates a custom set of structural variants such as Deletions, Insertions, Inversions, Tandem Duplications and Traslocations according to the user instructions provided in the config.yaml file. The user can choose to simulate variants according to a pareto distribution, which more closely reflects the natural distribution of variants (with fewer long variants and more short variants), or a normal distribution.  
+## inSVert simulate
+The first module simulates a custom set of structural variants such as Deletions, Insertions, Inversions, Tandem Duplications and Traslocations according to the user instructions provided in the config.yaml file. 
+
+The user can choose to simulate variants according to a pareto distribution, which more closely reflects the natural distribution of variants (with fewer long variants and more short variants), or a normal distribution.  
+
 inSVert also takes into account polyploid organisms: the user uses the 'ploidy' and 'heterozygousity' parameters to instruct the simulate module about how many genome copies he intends to simulate the variants on (most likely this corresponds to the ploidy number of the organism of interest) and the probability of variants of being heterozygous (present only on one genome copy). 
 
 to simulate structural variants, simply type 
@@ -45,17 +48,11 @@ optional arguments:
 --non-symbolic : simulate a non symbolic VCF with explicit ALT and REF sequences. [!] this vastly increases the size of the resulting VCF
 ```
 
-### inSVert insert
-given a VCF file , either produced by *inSVert simulate* or provided by the user, the Structural Variants contained in the file will be programmatically inserted into a specified reference genome in fasta format. Although it may seem trivial, this is by far the most complex step as it requires careful tracking of the inserted variants to avoid indexing problems and to avoid placing variants one on top of the other. 
+## inSVert insert
+given a VCF file , either produced by *inSVert simulate* or provided by the user, the  variants contained in the file will be programmatically inserted into a specified reference genome in fasta format. Although it may seem trivial, this is by far the most complex step as it requires careful tracking of the inserted variants to avoid indexing problems and to avoid placing variants one on top of the other. 
 
-For this reason it is a strict requirement that the VCF file is produced from the same reference in which we are trying to insert the variants and that the VCF file is sorted. Therefore, inSVert will take care of sorting the VCF file if it is not sorted already. 
+For this reason it is a strict requirement that the VCF file is produced from the same reference in which we are trying to insert the variants and that the VCF file is sorted. Therefore, inSVert check both requiremenrs and take care of sorting the VCF file if not already sorted.
 
-As far as the reference consistency: it can be easily checked by inspecting the first few lines of the VCF
-simply type 
-```
-head myfile.vcf 
-```
-and check for a correspondance between the reference of the VCF and the one you want to put the variants in. [to implement] Using a different reference invalidates the whole simulation, therefore inSVert will generate an error if it finds that you are trying to use a reference with a different name from the one from which the VCF has originated. 
 
 to insert Structural Variants from a sorted VCF to a reference genome, simply type 
 ```
@@ -86,11 +83,6 @@ inSVert has a decoupled architecture, designed so that its modules can be used a
 
 
 # TO DO
-build a folder /example_data with some toy genomes of different species (yeast, human, wheat) under 100 MBs and publish them on github 
-wiki: how TRAs and dDups are expected and represented, how streaming can allow to TRAs and dDups are expected and represented, how streaming can allow to achieve better memory performances,  
-
-for the final version:
-
 
 **main features**
 
@@ -101,7 +93,7 @@ for the final version:
 - implement optional argument in the simulate command to include only specific regions using a bed file (--include-only)
 - implement an optional argument to allow for the output of a .bed-like file in addition to the VCF for a more human readible variant log output 
 - add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
-- modify BND formatting to include PAIRID in addition to already present MATEI- modify BND formatting to include PAIRID in addition to already present MATEID
+
 
 **performance optimizations**
 - multiprocessing for multiple haplotypes as a DEFAULT (speed)(keep for v1)
