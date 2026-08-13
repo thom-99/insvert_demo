@@ -80,6 +80,28 @@ def test_phased_variant_no_warning(sample_ref, temp_dir, capsys):
 
     assert "unphased" not in captured
 
+def test_split_haplotypes_writes_one_fasta_per_haplotype(sample_ref, temp_dir):
+    vcf_path = temp_dir / "phased.vcf"
+    output_path = temp_dir / "out.fasta"
+    create_vcf(vcf_path, [
+        "chr1\t100\tdel1\tA\t<DEL>\t.\tPASS\tSVTYPE=DEL;SVLEN=-10;END=110\tGT\t1|0"
+    ])
+
+    insert.run(
+        0.41, str(sample_ref), str(vcf_path), ploidy=2,
+        output_fasta=str(output_path), split_haplotypes=True
+    )
+
+    haplotype_one = temp_dir / "out_hap1.fasta"
+    haplotype_two = temp_dir / "out_hap2.fasta"
+    assert not output_path.exists()
+    assert haplotype_one.exists()
+    assert haplotype_two.exists()
+    with pysam.FastaFile(str(haplotype_one)) as output:
+        assert len(output.fetch("Sample#H1#chr1")) == 990
+    with pysam.FastaFile(str(haplotype_two)) as output:
+        assert len(output.fetch("Sample#H2#chr1")) == 1000
+
 def test_upfront_count_summary(sample_ref, temp_dir, capsys):
     vcf_path = temp_dir / "mixed.vcf"
     out_fasta = temp_dir / "out.fa"

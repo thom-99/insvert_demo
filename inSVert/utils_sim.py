@@ -312,7 +312,7 @@ def buildheader(chroms, lengths, reference_path=None, seed=None):
 
     header_lines.append("##fileformat=VCFv4.2")
     header_lines.append("##source=inSVert-0.1.0")
-    header_lines.append(f"##inSVert seed: {seed}")
+    header_lines.append(f"##inSVert_seed={seed}")
     header_lines.append(f"##fileDate={datetime.date.today().strftime('%Y%m%d')}")
 
     # optional reference path

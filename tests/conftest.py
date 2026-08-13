@@ -3,7 +3,7 @@ from pathlib import Path
 
 @pytest.fixture
 def test_data_dir():
-    return Path(__file__).parent / "data" 
+    return Path(__file__).parent / "test_data" 
 
 @pytest.fixture
 def test_ref_path(test_data_dir):

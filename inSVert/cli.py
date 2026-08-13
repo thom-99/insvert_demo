@@ -133,8 +133,14 @@ def simulate_cmd(config, reference, output, seed, exclude, non_symbolic):
     show_default=True,
     help="Name used in multi-haplotype FASTA headers."
 )
+@click.option(
+    "--split-haplotypes",
+    is_flag=True,
+    default=False,
+    help="Write each haplotype to a separate FASTA file using the output name plus _hapN."
+)
 
-def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants, sample_name):
+def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants, sample_name, split_haplotypes):
     """
     Insert structural variants from a VCF file into a reference genome.
     
@@ -173,7 +179,7 @@ def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants, sampl
     # 2. Execution with Spinner
     with console.status(f"[bold green]Processing Genome (GC={gc})...[/bold green]", spinner="dots"):
             try:
-                insert.run(gc, reference, vcf, ploidy, output, skip_unphased_variants, sample_name)
+                insert.run(gc, reference, vcf, ploidy, output, skip_unphased_variants, sample_name, split_haplotypes)
             except Exception as e:
                 console.print(f"[bold red]Error:[/bold red] {e}")
                 raise click.Abort()

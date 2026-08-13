@@ -91,8 +91,6 @@ for the final version:
 
 
 **main features**
-- implement MNPs
-- reason about multi allelic variants
 
 **bugs**
 - check for VCF reference and insertion destination reference consistency within input validation module
@@ -117,12 +115,3 @@ utilities:
 - web app that takes a user inputted SV in a simple to understand format like a .bed format and transforms it into a VCF record. It should be able to work with something like a tsv or bed format and be able to process multiple lines. 
 
 
-
-use cases showcase ideads:
-
-
-- take a crop genome and simulate several SVs on it, use badread to generate reads and benchmark different variant callers , evaluate against the ground truth using truvari and output the results in a cool html report. 
-
-
-note:
-there are two ways in which it makes sense to represent cut and paste traslocations. One if with 6 BND, 2 of which determine a heal adjacency. Another otion could be with 4 BNDs ++ 1 DEL event. Essentially a dDUP and a DEL, which explains the missing piece on the source chrom. Reflect on this aspect and ask expert opinion on this. 

@@ -1,4 +1,5 @@
 from . import utils_ins
+import os
 import pysam
 import random
 from rich.progress import Progress
@@ -26,7 +27,7 @@ class BufferWriter:
             self.fh.write(self.buffer + '\n')
             self.buffer = ""
 
-def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=False, sample_name="Sample"):
+def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=False, sample_name="Sample", split_haplotypes=False):
     random.seed(42)
 
     print(f'Streaming variants from {vcf_file}...')
@@ -59,14 +60,22 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
     unphased_assignments = {}
     # Track skipped positions as a set of (chrom, pos) so each distinct genomic position is counted exactly once, regardless of ploidy.
     skipped_positions = set()
-
-    with open(output_fasta, 'w') as out_f:
-        writer = BufferWriter(out_f)
-        
+    
+    # if --split-haplotypes is requested, create the N output files and open them for writing
+    output_basename, output_extension = os.path.splitext(output_fasta)
+    output_paths = [f"{output_basename}_hap{haplotype + 1}{output_extension}"for haplotype in range(ploidy)] if split_haplotypes else [output_fasta]
+    output_files = [open(path, 'w') for path in output_paths]
+    
+    try:
         with Progress() as progress:
             task = progress.add_task("[cyan]Inserting SVs...", total=total_steps)
 
             for haplotype in range(ploidy):
+                
+                # set output fasta file according to haplotype
+                out_f = output_files[haplotype] if split_haplotypes else output_files[0]
+                writer = BufferWriter(out_f)
+
                 # Initialize ONCE per haplotype so inter-chromosomal TRA are tracked
                 processed_sources = set()
                 processed_sinks = set()
@@ -78,18 +87,18 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                         out_f.write(f">{chrom}\n")
                     else:
                         out_f.write(f">{sample_name}#H{haplotype+1}#{chrom}\n")
-                    
+
                     try:
                         chrom_variants = list(vcf.fetch(chrom))
                     except ValueError:
                         chrom_variants = []
 
-                    ref_pos = 0 
+                    ref_pos = 0
                     chrom_len = ref.get_reference_length(chrom)
-                                    
+
                     for var in chrom_variants:
                         progress.advance(task)
-                        
+
                         # HANDLING UNPHASED VARIANTS AND ASSIGNING HAPLOTYPES
                         sample = var.samples[0]
                         is_phased = sample.phased
@@ -132,7 +141,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             # Phased: use existing logic
                             if haplotype >= len(sample['GT']) or sample['GT'][haplotype] != 1:
                                 continue
- 
+
 
 
 
@@ -155,9 +164,9 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             chunk = ref.fetch(chrom, ref_pos, start)
                             writer.write(chunk)
                             ref_pos = start
-                        
+
                         # 2. Dispatch to utils_ins based on Type
-                        
+
                         ### SMALL VARIANTS HANDLING (SNPs, MNPs, indels) ###
 
                         if svtype is None:
@@ -171,11 +180,11 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             # Write ALT str, consume REF lenght from reference
                             writer.write(alt_str)
                             ref_pos = start + len(ref_allele)
-                            continue 
+                            continue
 
 
                         ### STRUCTURAL VARIANTS HANDLING (INS, DEL, INV, DUP, BNDs) ###
-                        
+
                         # comoute the length of the variant, BNDs are excluded as they do not have a svlength
                         if svtype != "BND":
                             svlen = var.info.get("SVLEN")
@@ -193,27 +202,27 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                                 explicit_seq, warning = utils_ins.extract_explicit_ins_sequence(var)
                                 if warning:
                                     progress.console.print(f"\n{warning}")
-                                
+
                                 if explicit_seq:
                                     ins_seq = explicit_seq
                                 else:
                                     ins_seq = utils_ins.generate_seq(svlen, gc_content)
-                                
+
                                 utils_ins.apply_insertion(writer, ins_seq)
                                 # ref_pos stays same
-                                    
+
                             elif svtype == 'DEL':
                                 ref_pos = utils_ins.apply_deletion(ref_pos, svlen)
-                                
+
                             elif svtype == 'INV':
                                 ref_pos = utils_ins.apply_inversion(ref, chrom, ref_pos, svlen, writer)
-                                    
+
                             elif svtype == 'DUP':
                                 vcf_sample_name = list(var.samples.keys())[0] if var.samples else None
                                 cn = var.samples[vcf_sample_name].get('CN') if vcf_sample_name else None
                                 if cn is None:
                                     cn = 2
-                                    
+
                                 ref_pos = utils_ins.apply_duplication(ref, chrom, ref_pos, svlen, cn, writer)
 
                         if svtype == 'BND':
@@ -253,14 +262,18 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                                 processed_sinks.add(event_id)
                                 continue
 
-                                                          
+
 
                     # 3. Finish Chromosome
                     if ref_pos < chrom_len:
                         chunk = ref.fetch(chrom, ref_pos, chrom_len)
                         writer.write(chunk)
-                    
+
                     writer.flush()
+    
+    finally:
+        for output_file in output_files:
+            output_file.close() # close all output files regardless of insertion errors
     
     if skipped_positions:
         print(f"Warning: skipped {len(skipped_positions)} variant record(s) due to coordinate overlaps.")
@@ -269,4 +282,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
     vcf.close()
     ref.close()
-    print(f'\nDone! Output written to {output_fasta}')
+
+    if split_haplotypes:
+        print(f'\nDone! Outputs written to {", ".join(output_paths)}')
+    else:
+        print(f'\nDone! Output written to {output_fasta}')
