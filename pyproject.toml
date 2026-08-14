@@ -4,9 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "inSVert"
-version = "0.0.0"
+version = "0.1.0"
 description = "Structural Variant Simulation & Insertion Toolkit"
 authors = [{name = "Thomas Di Marzo"}]
+readme = "README.md"
+license = {file = "LICENSE"}
 dependencies = [
     "pysam>=0.22.0",
     "pyyaml",

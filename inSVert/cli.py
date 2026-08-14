@@ -11,7 +11,7 @@ click.rich_click.USE_RICH_MARKUP = True
 console = Console()
 
 @click.group()
-@click.version_option("0.0.0", prog_name="inSVert")
+@click.version_option("0.1.0", prog_name="inSVert")
 def cli():
     """
     [bold magenta]inSVert[/bold magenta]: Structural Variant Simulation & Insertion Toolkit.

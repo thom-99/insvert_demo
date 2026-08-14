@@ -1,5 +1,6 @@
 data/
 inSVert/__pycache__
+tests/__pycache__
 .aider*
 .vscode/
 .BND-notes.txt
