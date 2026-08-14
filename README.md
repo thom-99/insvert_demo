@@ -25,7 +25,13 @@ pip install .
 # Usage
 
 ## inSVert simulate
-The first module simulates a custom set of structural variants such as Deletions, Insertions, Inversions, Tandem Duplications and Traslocations according to the user instructions provided in the config.yaml file. 
+The first module simulates a custom set of structural variants  according to the user instructions provided in the config.yaml file.
+You can use the configfile.yaml available in this repo or generate a template one with 
+
+```
+inSVert generate-configfile
+```
+then edit it based on what you want to simulate
 
 The user can choose to simulate variants according to a pareto distribution, which more closely reflects the natural distribution of variants (with fewer long variants and more short variants), or a normal distribution.  
 

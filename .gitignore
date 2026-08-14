@@ -1,14 +1,9 @@
 data/
 inSVert/__pycache__
 tests/__pycache__
-.aider*
 .vscode/
-.BND-notes.txt
-.changes.txt
 task_plan.md
-.gemini/
 technical_docs/
-.agents/
 
 # R history files
 .Rhistory
@@ -17,4 +12,3 @@ technical_docs/
 __pycache__/
 *.pyc
 *.pyo
-*.pyd

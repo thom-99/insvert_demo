@@ -3,6 +3,8 @@ from . import simulate
 from . import insert
 
 import rich_click as click
+from pathlib import Path
+from textwrap import dedent
 from rich.console import Console
 from rich.panel import Panel
 click.rich_click.USE_RICH_MARKUP = True
@@ -24,6 +26,81 @@ def cli():
 
     """
     pass
+
+
+@cli.command(name="generate-configfile")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(dir_okay=False, path_type=Path),
+    default=Path("config.yaml"),
+    show_default=True,
+    help="Path for the generated configuration file.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Overwrite the output file if it already exists.",
+)
+def generate_configfile(output, force):
+    """Generate a template YAML configuration file."""
+
+    if output.exists() and not force:
+        raise click.ClickException(
+            f"'{output}' already exists. Use --force to overwrite it."
+        )
+
+    template = dedent(
+        """\
+        # inSVert simulation configuration
+
+        genome:
+          ploidy: 2
+          heterozygosity: 0.5
+
+        variants:
+          INS:
+            count: 100
+            distribution: normal
+            parameters:
+              median_length: 500
+              min_length: 50
+              max_length: 5000
+              sigma: 100
+
+          DEL:
+            count: 100
+            distribution: pareto
+            parameters:
+              median_length: 500
+              min_length: 50
+              max_length: 5000
+
+          DUP:
+            count: 50
+            distribution: normal
+            parameters:
+              median_length: 1000
+              min_length: 100
+              max_length: 10000
+            copy_number:
+              min: 2
+              max: 5
+              weights: [0.5, 0.3, 0.15, 0.05]
+
+          SNP:
+            ratio: 0.0001
+            tstv_ratio: 2.0
+        """
+    )
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(template, encoding="utf-8")
+
+    console.print(
+        f"[bold green]✔ Configuration template written to "
+        f"[underline]{output}[/underline][/bold green]"
+    )
 
 
 # HANDLING THE SIMULATE MODULE 
