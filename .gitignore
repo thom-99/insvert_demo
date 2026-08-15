@@ -10,5 +10,6 @@ technical_docs/
 
 # Python bytecode and cache
 __pycache__/
+.pytest_cache/
 *.pyc
 *.pyo
