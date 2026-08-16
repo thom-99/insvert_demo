@@ -283,10 +283,15 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
 
                             pos = utils_sim.select_pos(chrom_length - allele_length + 1)
                             end = pos + allele_length
+
+                            # 0-based half-open [x,y) BED coordinates - computed to check overlaps with bed files
+                            bed_start = pos - 1
+                            bed_end = bed_start + allele_length
+
                             gt = utils_sim.generate_genotype(ploidy, heterozygosity)
 
                             if (utils_sim.overlaps(chrom, pos, end, gt, sv_positions) or
-                                utils_sim.overlaps_excluded_region(chrom, pos, end, excluded_regions)):
+                                utils_sim.overlaps_excluded_region(chrom, bed_start, bed_end, excluded_regions)):
                                 continue
 
                             ref_seq = utils_sim.fetch_ref_span(chrom, pos, end - 1, ref_fasta)
