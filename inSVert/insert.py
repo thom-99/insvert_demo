@@ -62,6 +62,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
     symbolic_ins_sequences = {}
     # Track skipped positions as a set of (chrom, pos) so each distinct genomic position is counted exactly once, regardless of ploidy.
     skipped_positions = set()
+    supported_svtypes = {'INS', 'DEL', 'INV', 'DUP', 'BND'}
+    warned_unsupported_svtypes = set()
     
     # if --split-haplotypes is requested, create the N output files and open them for writing
     output_basename, output_extension = os.path.splitext(output_fasta)
@@ -100,6 +102,17 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
                     for var in chrom_variants:
                         progress.advance(task)
+
+                        svtype = var.info.get("SVTYPE")
+                        if svtype is not None and svtype not in supported_svtypes:
+                            if svtype not in warned_unsupported_svtypes:
+                                progress.console.print(
+                                    f"\nWARNING: Unsupported SVTYPE '{svtype}' "
+                                    f"detected at {var.chrom}:{var.pos}; records of this type "
+                                    "will be skipped."
+                                )
+                                warned_unsupported_svtypes.add(svtype)
+                            continue
 
                         # HANDLING UNPHASED VARIANTS AND ASSIGNING HAPLOTYPES
                         sample = var.samples[0]
@@ -148,9 +161,6 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
 
                         start = var.pos - 1 # VCF is 1-indexed, python is 0-indexed
-
-                        # Resolve svtype early so BNDs can be exempted from the linear overlap check below.
-                        svtype = var.info.get("SVTYPE")
 
                         # Check Overlap only for non-BND variants.
                         # BND companion records intentionally share coordinates with

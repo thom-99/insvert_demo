@@ -132,6 +132,22 @@ def test_duplication_without_cn_uses_default_copy_number(sample_ref, temp_dir, c
         assert len(output.fetch("Sample#H1#chr1")) == 1010
         assert len(output.fetch("Sample#H2#chr1")) == 1000
 
+
+def test_unsupported_svtype_is_warned_and_skipped(sample_ref, temp_dir, capsys):
+    vcf_path = temp_dir / "unsupported.vcf"
+    out_fasta = temp_dir / "out.fa"
+    create_vcf(vcf_path, [
+        "chr1\t100\tcnv1\tA\t<CNV>\t.\tPASS\tSVTYPE=CNV;SVLEN=10;END=110\tGT\t1|1"
+    ])
+
+    insert.run(0.41, str(sample_ref), str(vcf_path), ploidy=2, output_fasta=str(out_fasta))
+    captured = capsys.readouterr().out
+
+    assert captured.count("Unsupported SVTYPE 'CNV'") == 1
+    with pysam.FastaFile(str(out_fasta)) as output:
+        assert output.fetch("Sample#H1#chr1") == "A" * 1000
+        assert output.fetch("Sample#H2#chr1") == "A" * 1000
+
 def test_bnd_event_consistency(sample_ref, temp_dir, capsys, monkeypatch):
     vcf_path = temp_dir / "unphased_bnd.vcf"
     out_fasta = temp_dir / "out.fa"
