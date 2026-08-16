@@ -76,7 +76,7 @@ parse_time_log() {
     echo "  Elapsed Wall Time   : $wall_time"
     echo "  Peak Memory (RSS)   : ${max_rss_mb} MB (${max_rss_kb} KB)"
     echo "  User CPU Time       : ${user_time} s"
-    echo "  System CPU Time     : ${sys_cpu} s"
+    echo "  System CPU Time     : ${sys_time} s"
     echo "  Average CPU Usage   : $cpu_pct"
 }
 

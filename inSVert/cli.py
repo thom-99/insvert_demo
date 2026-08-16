@@ -182,7 +182,7 @@ def simulate_cmd(config, reference, output, seed, exclude, non_symbolic):
 @click.argument("vcf", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "--ploidy", 
-    type=int, 
+    type=click.IntRange(min=1), 
     required=True, 
     help="Ploidy of the simulated organism (number of haplotype copies to generate)."
 )
