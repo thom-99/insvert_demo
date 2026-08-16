@@ -461,6 +461,17 @@ def find_valid_tra_coords(chroms, lengths, sv_length, gt, sv_positions, excluded
     # 1. Check boundaries
     if pos_src + sv_length + 1 > len_src or pos_dst + 1 > len_dst:
         return None
+
+    # 2. Check for overalapping inter-chromosomal events (preventing traslocation source and destination overlaps)
+    if chrom_src == chrom_dst:
+      source_start = pos_src
+      source_end = pos_src + sv_length + 1
+
+      destination_start = pos_dst
+      destination_end = pos_dst + 1
+
+      if source_start <= destination_end and destination_start <= source_end:
+          return None
         
     # 2. Check overlaps
     if (overlaps(chrom_src, pos_src, pos_src + sv_length + 1, gt, sv_positions) or
@@ -545,6 +556,7 @@ def generate_tra_bnds(svtype, chrom_src, pos_src, chrom_dst, pos_dst, length, ev
     """
     # Fetch true bases using the helper
     ref_dst = fetch_ref_base(chrom_dst, pos_dst, ref_fasta)
+    ref_dst_plus1 = fetch_ref_base(chrom_dst, pos_dst + 1, ref_fasta) #needed for P4
     ref_src_start = fetch_ref_base(chrom_src, pos_src + 1, ref_fasta)
     ref_src_end = fetch_ref_base(chrom_src, pos_src + length, ref_fasta)
     
@@ -568,16 +580,13 @@ def generate_tra_bnds(svtype, chrom_src, pos_src, chrom_dst, pos_dst, length, ev
             
         bnds.append(VariantObjects.Breakend(
             chrom_dst, pos_dst + 1, f"{event_id}.P4", gt, f"{event_id}.P3", event_id, 
-            f"]{chrom_src}:{pos_src + length}]{ref_dst}", ref_dst))
+            f"]{chrom_src}:{pos_src + length}]{ref_dst_plus1}", ref_dst_plus1))
     else:
         # REVERSE ORIENTATION
         # The translocated segment is pasted in reverse-complement.
         # Per VCF 4.2 spec: t[p[ / ]p]t → t]p] / [p[t
         # Source coordinates also swap: dst now joins to src_end first (reading right-to-left)
         
-        # re-fetch ref for dst_pos+1 (needed for P3/P4 in reverse)
-        ref_dst_plus1 = fetch_ref_base(chrom_dst, pos_dst + 1, ref_fasta)
-
         # 1. PASTE START — dst joins to src_end (reverse extending left)
         bnds.append(VariantObjects.Breakend(
             chrom_dst, pos_dst, f"{event_id}.P1", gt, f"{event_id}.P2", event_id,

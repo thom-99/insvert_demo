@@ -25,7 +25,7 @@ pip install .
 # Usage
 
 ## inSVert simulate
-The first module simulates a custom set of structural variants  according to the user instructions provided in the config.yaml file.
+The first module simulates a custom set of variants according to the user instructions provided in the config.yaml file.
 You can use the configfile.yaml available in this repo or generate a template one with 
 
 ```
@@ -37,7 +37,7 @@ The user can choose to simulate variants according to a pareto distribution, whi
 
 inSVert also takes into account polyploid organisms: the user uses the 'ploidy' and 'heterozygousity' parameters to instruct the simulate module about how many genome copies he intends to simulate the variants on (most likely this corresponds to the ploidy number of the organism of interest) and the probability of variants of being heterozygous (present only on one genome copy). 
 
-to simulate structural variants, simply type 
+to simulate variants, simply type 
 ```
 inSVert simulate config.yaml reference.fasta -o simulated.vcf
 ```
@@ -60,7 +60,7 @@ given a VCF file , either produced by *inSVert simulate* or provided by the user
 For this reason it is a strict requirement that the VCF file is produced from the same reference in which we are trying to insert the variants and that the VCF file is sorted. Therefore, inSVert check both requiremenrs and take care of sorting the VCF file if not already sorted.
 
 
-to insert Structural Variants from a sorted VCF to a reference genome, simply type 
+to insert variants from a sorted VCF to a reference genome, simply type 
 ```
 inSVert insert reference.fasta simulated.vcf --ploidy 2 -o simulated.fasta
 ```

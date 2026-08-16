@@ -37,8 +37,9 @@ def test_generate_tra_bnds_forward():
 
         # P3: t[p[ -> ref_src_end at chr1:10 is 'C'
         assert bnds[2].alt_string == "C[chr2:11["
-        # P4: ]p]t -> ref_dst at chr2:10 is 'G'
-        assert bnds[3].alt_string == "]chr1:10]G"
+        # P4: ]p]t -> ref_dst_plus1 at chr2:11 is 'C'
+        assert bnds[3].alt_string == "]chr1:10]C"
+        assert bnds[3].ref == "C"
 
         ref_fasta.close()
     finally:
