@@ -91,7 +91,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                         out_f.write(f">{sample_name}#H{haplotype+1}#{chrom}\n")
 
                     try:
-                        chrom_variants = list(vcf.fetch(chrom))
+                        chrom_variants = vcf.fetch(chrom)
                     except ValueError:
                         chrom_variants = []
 
