@@ -129,3 +129,42 @@ variants:
     assert fasta_out.exists()
     with pysam.FastaFile(str(fasta_out)) as edited_fa:
         assert len(edited_fa.references) > 0
+
+
+def test_symbolic_insertion_reuses_sequence_across_haplotypes(tmp_path, monkeypatch):
+    reference_path = tmp_path / "reference.fa"
+    reference_path.write_text(">chr1\n" + "A" * 20 + "\n")
+    pysam.faidx(str(reference_path))
+
+    vcf_path = tmp_path / "symbolic_ins.vcf"
+    vcf_path.write_text(
+        "##fileformat=VCFv4.2\n"
+        "##contig=<ID=chr1,length=20>\n"
+        "##INFO=<ID=SVTYPE,Number=1,Type=String,Description=\"SV type\">\n"
+        "##INFO=<ID=SVLEN,Number=1,Type=Integer,Description=\"SV length\">\n"
+        "##INFO=<ID=END,Number=1,Type=Integer,Description=\"End position\">\n"
+        "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE\n"
+        "chr1\t5\tins1\tA\t<INS>\t.\tPASS\tSVTYPE=INS;SVLEN=4;END=5\tGT\t1|1\n"
+    )
+
+    generation_count = 0
+
+    def fake_generate_seq(length, gc_content):
+        nonlocal generation_count
+        generation_count += 1
+        base = "C" if generation_count == 1 else "G"
+        return base * length
+
+    monkeypatch.setattr(utils_ins, "generate_seq", fake_generate_seq)
+
+    output_path = tmp_path / "edited.fa"
+    insert.run(0.5, str(reference_path), str(vcf_path), 2, str(output_path))
+
+    with pysam.FastaFile(str(output_path)) as edited_fasta:
+        haplotype_1 = edited_fasta.fetch("Sample#H1#chr1")
+        haplotype_2 = edited_fasta.fetch("Sample#H2#chr1")
+
+    assert generation_count == 1
+    assert haplotype_1 == haplotype_2
+    assert haplotype_1[5:9] == "CCCC"

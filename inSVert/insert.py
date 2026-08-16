@@ -58,6 +58,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
     # Cache unphased assignments ONCE across all haplotype passes
     unphased_assignments = {}
+    # Cache generated sequences for symbolic <INS> so that they are re-used across haplotypes and not randomly re-generated per haplotype
+    symbolic_ins_sequences = {}
     # Track skipped positions as a set of (chrom, pos) so each distinct genomic position is counted exactly once, regardless of ploidy.
     skipped_positions = set()
     
@@ -206,7 +208,12 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                                 if explicit_seq:
                                     ins_seq = explicit_seq
                                 else:
-                                    ins_seq = utils_ins.generate_seq(svlen, gc_content)
+                                    insertion_key = (var.chrom, var.pos, var.id)
+                                    # generate the sequence for the symbolic <INS> only once and cache it
+                                    if insertion_key not in symbolic_ins_sequences:
+                                        symbolic_ins_sequences[insertion_key] = utils_ins.generate_seq(svlen, gc_content)
+
+                                    ins_seq = symbolic_ins_sequences[insertion_key]
 
                                 utils_ins.apply_insertion(writer, ins_seq)
                                 # ref_pos stays same
