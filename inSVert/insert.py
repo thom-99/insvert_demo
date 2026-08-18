@@ -2,6 +2,7 @@ from . import utils_ins
 import os
 import pysam
 import random
+from collections import defaultdict
 from rich.progress import Progress
 
 class BufferWriter:
@@ -27,13 +28,36 @@ class BufferWriter:
             self.fh.write(self.buffer + '\n')
             self.buffer = ""
 
-def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=False, sample_name="Sample", split_haplotypes=False):
+def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=False, sample_name="Sample", split_haplotypes=False, truth_vcf=None):
     random.seed(42)
 
     print(f'Streaming variants from {vcf_file}...')
     ref = pysam.FastaFile(ref_fasta)
     sorted_vcf_path = utils_ins.prepare_vcf(vcf_file) #vcf preparation ensuring it is properly sorted
     vcf = pysam.VariantFile(sorted_vcf_path)
+
+    # A truth VCF must never replace an input or an output used by this run.
+    if truth_vcf:
+        truth_path = os.path.realpath(os.path.abspath(truth_vcf))
+        protected_paths = {
+            os.path.realpath(os.path.abspath(ref_fasta)),
+            os.path.realpath(os.path.abspath(vcf_file)),
+            os.path.realpath(os.path.abspath(sorted_vcf_path)),
+            os.path.realpath(os.path.abspath(output_fasta)),
+        }
+        if split_haplotypes:
+            output_basename, output_extension = os.path.splitext(output_fasta)
+            protected_paths.update(
+                os.path.realpath(os.path.abspath(f"{output_basename}_hap{haplotype + 1}{output_extension}"))
+                for haplotype in range(ploidy)
+            )
+        if truth_path in protected_paths:
+            vcf.close()
+            ref.close()
+            raise ValueError(
+                "Truth VCF output must be different from the input VCF, "
+                "reference FASTA, and output FASTA."
+            )
     tra_cache = utils_ins.prefetch_translocations(sorted_vcf_path, ref_fasta)
     
     # Combined pass: count variants, unphased genotypes, and DUPs lacking CN.
@@ -64,6 +88,23 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
     skipped_positions = set()
     supported_svtypes = {'INS', 'DEL', 'INV', 'DUP', 'BND'}
     warned_unsupported_svtypes = set()
+
+    # Track the haplotypes on which each ordinary record was expected and
+    # actually inserted. A record is truthful only when these sets match.
+    variant_haplotypes = defaultdict(lambda: {"expected": set(), "inserted": set()})
+
+    # BND records describe a whole event, so success is tracked by EVENT and
+    # by its required cut/paste actions rather than by individual VCF lines.
+    bnd_expected_haplotypes = defaultdict(set)
+    bnd_required_actions = defaultdict(set)
+    bnd_completed_actions = defaultdict(set)
+    if truth_vcf:
+        for deletion_jobs in tra_cache["deletions"].values():
+            for _, event_id in deletion_jobs.values():
+                bnd_required_actions[event_id].add("deletion")
+        for insertion_jobs in tra_cache["insertions"].values():
+            for *_, event_id in insertion_jobs.values():
+                bnd_required_actions[event_id].add("insertion")
     
     # if --split-haplotypes is requested, create the N output files and open them for writing
     output_basename, output_extension = os.path.splitext(output_fasta)
@@ -100,7 +141,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                     ref_pos = 0
                     chrom_len = ref.get_reference_length(chrom)
 
-                    for var in chrom_variants:
+                    for variant_index, var in enumerate(chrom_variants):
                         progress.advance(task)
 
                         svtype = var.info.get("SVTYPE")
@@ -160,6 +201,17 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
 
 
+                        # Record the intended ALT placement before later checks
+                        # can reject it as malformed or overlapping.
+                        if truth_vcf:
+                            variant_key = (chrom, variant_index)
+                            if svtype == "BND":
+                                event_id = var.info.get("EVENT")
+                                if event_id is not None:
+                                    bnd_expected_haplotypes[event_id].add(haplotype)
+                            else:
+                                variant_haplotypes[variant_key]["expected"].add(haplotype)
+
                         start = var.pos - 1 # VCF is 1-indexed, python is 0-indexed
 
                         # Check Overlap only for non-BND variants.
@@ -192,6 +244,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             # Write ALT str, consume REF lenght from reference
                             writer.write(alt_str)
                             ref_pos = start + len(ref_allele)
+                            if truth_vcf:
+                                variant_haplotypes[variant_key]["inserted"].add(haplotype)
                             continue
 
 
@@ -242,6 +296,11 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
                                 ref_pos = utils_ins.apply_duplication(ref, chrom, ref_pos, svlen, cn, writer)
 
+                            # Reaching this point means the selected structural
+                            # variant was applied without being skipped.
+                            if truth_vcf:
+                                variant_haplotypes[variant_key]["inserted"].add(haplotype)
+
                         if svtype == 'BND':
                             event_id = var.info.get('EVENT')
 
@@ -258,6 +317,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
                                 ref_pos = utils_ins.apply_deletion(ref_pos, length)
                                 processed_sources.add(event_id)
+                                if truth_vcf:
+                                    bnd_completed_actions[(haplotype, event_id)].add("deletion")
                                 continue
 
                             # ACTION: the 'PASTE' i.e. sink of the cut&paste or copy&paste TRAs
@@ -277,6 +338,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
                                 utils_ins.apply_insertion(writer, seq)
                                 processed_sinks.add(event_id)
+                                if truth_vcf:
+                                    bnd_completed_actions[(haplotype, event_id)].add("insertion")
                                 continue
 
 
@@ -299,6 +362,46 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
     vcf.close()
     ref.close()
+
+    if truth_vcf:
+        successful_variants = {
+            key
+            for key, state in variant_haplotypes.items()
+            if state["expected"] and state["inserted"] == state["expected"]
+        }
+        successful_bnd_events = {
+            event_id
+            for event_id, haplotypes in bnd_expected_haplotypes.items()
+            if haplotypes
+            and bnd_required_actions[event_id]
+            and all(
+                bnd_required_actions[event_id]
+                <= bnd_completed_actions[(haplotype, event_id)]
+                for haplotype in haplotypes
+            )
+        }
+
+        # Re-read the prepared VCF so records and the complete original header
+        # are copied unchanged while unsuccessful records are filtered out.
+        per_chrom_index = defaultdict(int)
+        output_mode = "wz" if os.fspath(truth_vcf).endswith(".gz") else "w"
+        with pysam.VariantFile(sorted_vcf_path) as source_vcf:
+            with pysam.VariantFile(
+                truth_vcf, mode=output_mode, header=source_vcf.header.copy()
+            ) as output_vcf:
+                for record in source_vcf:
+                    record_index = per_chrom_index[record.chrom]
+                    per_chrom_index[record.chrom] += 1
+
+                    if record.info.get("SVTYPE") == "BND":
+                        keep = record.info.get("EVENT") in successful_bnd_events
+                    else:
+                        keep = (record.chrom, record_index) in successful_variants
+
+                    if keep:
+                        output_vcf.write(record)
+
+        print(f"Truth VCF written to {truth_vcf}")
 
     if split_haplotypes:
         print(f'\nDone! Outputs written to {", ".join(output_paths)}')

@@ -16,7 +16,7 @@ variants:
 
   # Deletions
   DEL:
-    count: 100     #n. of variants to simulate 
+    count: 8000     #n. of variants to simulate 
     distribution: "normal"   # type of distr. for variant lengths (pareto/normal)
     parameters:
       median_length: 5000      # Target median length in bp
@@ -26,7 +26,7 @@ variants:
 
   # Insertions 
   INS:
-    count: 100
+    count: 660
     distribution: "normal" 
     parameters:
       median_length: 30000
@@ -36,7 +36,7 @@ variants:
 
   # Tandem Duplications
   DUP:                                
-    count: 100            
+    count: 3300            
     distribution: "normal"
     parameters:
       median_length: 2000
@@ -50,7 +50,7 @@ variants:
 
   # Inversions
   INV:
-    count: 100
+    count: 1500
     distribution: "pareto"   
     parameters:
       median_length: 50000
@@ -60,7 +60,7 @@ variants:
 
   # Copy & Paste traslocations / Interspersed Duplications
   TRA_COPY:
-    count: 10000
+    count: 100
     distribution: "normal"   
     reverse_ratio: 0.2   # Probability of being spawned in reverse orientation 
     parameters:
@@ -71,7 +71,7 @@ variants:
 
   # Cut & Paste traslocations
   TRA_CUT:
-    count: 10000
+    count: 100
     distribution: "normal"   
     reverse_ratio: 0.2   # Probability of being spawned in reverse orientation 
     parameters:

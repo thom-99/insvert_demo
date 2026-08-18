@@ -322,6 +322,8 @@ def buildheader(chroms, lengths, reference_path=None, seed=None):
     # contig lines 
     for chrom, length in zip(chroms, lengths):
         header_lines.append(f"##contig=<ID={chrom},length={length}>")    
+    
+    header_lines.append('##FILTER=<ID=PASS,Description="All filters passed">')
 
     # INFO fields
     header_lines.append('##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">')

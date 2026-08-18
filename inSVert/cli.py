@@ -217,8 +217,14 @@ def simulate_cmd(config, reference, output, seed, exclude, non_symbolic):
     default=False,
     help="Write each haplotype to a separate FASTA file using the output name plus _hapN."
 )
+@click.option(
+    "--truth-vcf",
+    type=click.Path(dir_okay=False),
+    default=None,
+    help="Write a VCF containing only variants successfully inserted into the reference."
+)
 
-def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants, sample_name, split_haplotypes):
+def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants, sample_name, split_haplotypes, truth_vcf):
     """
     Insert structural variants from a VCF file into a reference genome.
     
@@ -257,7 +263,11 @@ def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants, sampl
     # 2. Execution with Spinner
     with console.status(f"[bold green]Processing Genome (GC={gc})...[/bold green]", spinner="dots"):
             try:
-                insert.run(gc, reference, vcf, ploidy, output, skip_unphased_variants, sample_name, split_haplotypes)
+                insert.run(
+                    gc, reference, vcf, ploidy, output,
+                    skip_unphased_variants, sample_name, split_haplotypes,
+                    truth_vcf
+                )
             except Exception as e:
                 console.print(f"[bold red]Error:[/bold red] {e}")
                 raise click.Abort()

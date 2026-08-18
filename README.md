@@ -45,13 +45,19 @@ where the first argument is the path to the config.yaml file and the second one 
 
 optional arguments:
 ```
--o / --output : path to which you want your output VCF file to be written
+-o, --output PATH
+    Path for the output VCF file. Default: simulated.vcf.
 
---seed : set a seed for the random library for reproducible results
+--seed INTEGER
+    Random seed for reproducible simulations.
 
---exclude : provide a .bed file with genomic coordinates to exclude from the simulation (ex. mithocondrial DNA, centromeres, etc...)
+--exclude PATH
+    BED file containing genomic regions to exclude from simulation, such as
+    centromeres or mitochondrial DNA.
 
---non-symbolic : simulate a non symbolic VCF with explicit ALT and REF sequences. [!] this vastly increases the size of the resulting VCF
+--non-symbolic
+     Write explicit REF and ALT sequences instead of symbolic alleles such as
+    <INS> and <DEL>. This can substantially increase the output VCF size
 ```
 
 ## inSVert insert
@@ -69,15 +75,27 @@ where the first argument is the path to the reference genome and the second one 
 optional arguments:
 
 ```
--o / --output : path to which you want your output fasta file to be written
+-o, --output PATH
+    Path for the output FASTA file.
 
---gc : GC ratio used when generating insertion sequences, the default is set to the human GC content (0.41)
+--truth-vcf PATH
+    Write a ground-truth VCF containing only variants successfully inserted
+    into the output FASTA. Recommended for third-party VCFs, where malformed,
+    unsupported, or conflicting records may be skipped.
 
---skip-unphased-variants : with this option unphased variants are skipped entirely, rather than assigned to a random haplotype.
+--gc FLOAT
+    GC fraction used when generating insertion sequences. Must be between
+    0 and 1. Default: 0.41.
 
---sample-name : name of the organism, written in the output fasta header instead of generic 'Sample#Haplotype#Contig'
+--sample-name TEXT
+    Sample name used in multi-haplotype FASTA headers. Default: Sample.
 
---split-haplotypes : instead of a single output fasta file, split it into the [--ploidy] distinct haplotypes (ex: for ploidy=2 --> output_hap1.fa + output_hap2.fa) 
+--skip-unphased-variants
+    Skip unphased variants instead of assigning them randomly to a haplotype.
+
+--split-haplotypes
+    Write each haplotype to a separate FASTA file. For example, an output
+    named output.fa with ploidy 2 produces output_hap1.fa and output_hap2
 ```
 
 
@@ -97,8 +115,6 @@ inSVert has a decoupled architecture, designed so that its modules can be used a
 **quality of life**
 
 - implement optional argument in the simulate command to include only specific regions using a bed file (--include-only)
-- implement an optional argument to allow for the output of a .bed-like file in addition to the VCF for a more human readible variant log output 
-- add a generateconfigfile function in the cli.py that generates a template configfile (do it at the end) x
 
 
 **performance optimizations**
