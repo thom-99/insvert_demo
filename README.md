@@ -7,8 +7,6 @@ inSVert is a software built for the simulation of structural variants and for th
 
 The software is composed by two modules: simulate & insert. 
 
-![Alt text](img/benchmarking_workflow.png)
-
 # Installation
 when installing inSVert, using a virtual enviroment is highly recommended
 
