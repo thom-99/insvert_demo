@@ -4,6 +4,7 @@ tests/__pycache__
 .vscode/
 task_plan.md
 technical_docs/
+TODO.md
 
 # R history files
 .Rhistory

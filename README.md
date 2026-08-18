@@ -3,9 +3,12 @@
 </p>
 
 # inSVert 
-inSVert is a software built for the simulation of structural variants and for the insertion of structural variants into a reference genome. 
+inSVert is a bioinformatic utility deisgned to perform two distinct, yet interconnected, tasks:
+- simulate genomic variants, encoding them into a VCF file
+- insert variants from a VCF file into a reference genome
 
-The software is composed by two modules: simulate & insert. 
+### so, what can I do with it?
+On principle, inSVert main purpose lies on producing a synthetic ground-truth set of structural variants and inserting them into a reference genome, which will be further processed with the ultimate goal of benchmarking other tools such as variant callers and read mappers. 
 
 # Installation
 when installing inSVert, using a virtual enviroment is highly recommended
@@ -31,7 +34,7 @@ inSVert generate-configfile
 ```
 then edit it based on what you want to simulate
 
-The user can choose to simulate variants according to a pareto distribution, which more closely reflects the natural distribution of variants (with fewer long variants and more short variants), or a normal distribution.  
+The user can choose to simulate variants according to a [pareto distribution](https://en.wikipedia.org/wiki/Pareto_distribution), which more closely reflects the natural distribution of variants (with fewer long variants and more short variants), or a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution).  
 
 inSVert also takes into account polyploid organisms: the user uses the 'ploidy' and 'heterozygousity' parameters to instruct the simulate module about how many genome copies he intends to simulate the variants on (most likely this corresponds to the ploidy number of the organism of interest) and the probability of variants of being heterozygous (present only on one genome copy). 
 
@@ -102,28 +105,4 @@ optional arguments:
 ![Alt text](img/inSVert_whitebackground.png)
 
 inSVert has a decoupled architecture, designed so that its modules can be used as a standalone bioinformatic utility. 
-
-
-# TO DO
-
-**main features**
-
-**bugs**
-
-**quality of life**
-
-- implement optional argument in the simulate command to include only specific regions using a bed file (--include-only)
-
-
-**performance optimizations**
-- multiprocessing for multiple haplotypes as a DEFAULT (speed)(keep for v1)
-
-**extras**
-- containerize in docker image 
-- write a nextflow benchmarking pipeline 
-- when writing the pipeline, perform multiple simulations with different seeds to be able to build a precision-recall curve
-
-utilities:
-- web app that takes a user inputted SV in a simple to understand format like a .bed format and transforms it into a VCF record. It should be able to work with something like a tsv or bed format and be able to process multiple lines. 
-
 
