@@ -1,0 +1,80 @@
+# inSVert getting-started simulation configuration.
+# Counts are genome-wide targets.
+
+genome:
+  ploidy: 2
+  heterozygosity: 0.6
+
+variants:
+  # Single-nucleotide polymorphisms
+  SNP:
+    count: 1000000
+    tstv_ratio: 2.0
+
+  # Multi-nucleotide polymorphisms
+  MNP:
+    count: 50000
+    tstv_ratio: 2.0
+
+  # Deletions
+  DEL:
+    count: 2500
+    distribution: pareto
+    parameters:
+      median_length: 1000
+      min_length: 50
+      max_length: 100000
+
+  # Insertions
+  INS:
+    count: 2500
+    distribution: pareto
+    parameters:
+      median_length: 1000
+      min_length: 50
+      max_length: 100000
+
+  # Tandem duplications
+  DUP:
+    count: 1000
+    distribution: normal
+    parameters:
+      median_length: 3000
+      sigma: 500
+      min_length: 100
+      max_length: 20000
+    copy_number:
+      min: 2
+      max: 5
+      weights: [0.7, 0.2, 0.07, 0.03]
+
+  # Inversions
+  INV:
+    count: 1000
+    distribution: pareto
+    parameters:
+      median_length: 10000
+      min_length: 1000
+      max_length: 500000
+
+  # Interspersed duplications / copy-and-paste translocations
+  TRA_COPY:
+    count: 250
+    distribution: normal
+    reverse_ratio: 0.2
+    parameters:
+      median_length: 20000
+      sigma: 2000
+      min_length: 1000
+      max_length: 200000
+
+  # Cut-and-paste translocations
+  TRA_CUT:
+    count: 250
+    distribution: normal
+    reverse_ratio: 0.2
+    parameters:
+      median_length: 20000
+      sigma: 2000
+      min_length: 1000
+      max_length: 200000
