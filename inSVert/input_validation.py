@@ -83,12 +83,12 @@ def validate_config(config_path):
             continue
 
         if variant_type in {'SNP', 'MNP'}:
-            for key in settings.keys() - {'ratio', 'tstv_ratio'}:
+            for key in settings.keys() - {'count', 'tstv_ratio'}:
                 warnings.append(f"Unknown setting '{path}.{key}' will be ignored.")
 
-            ratio = settings.get('ratio')
-            if not is_number(ratio) or not 0.0 < ratio < 1.0:
-                errors.append(f"'{path}.ratio' is required and must be a number between 0 and 1.")
+            count = settings.get('count')
+            if (isinstance(count, bool) or not isinstance(count, int) or count < 0):
+                errors.append(f"'{path}.count' is required and must be an integer greater than or equal to 0.")
 
             if 'tstv_ratio' not in settings:
                 warn_default(f'{path}.tstv_ratio', 2.0)

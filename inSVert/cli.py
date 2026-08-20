@@ -89,7 +89,7 @@ def generate_configfile(output, force):
               weights: [0.5, 0.3, 0.15, 0.05]
 
           SNP:
-            ratio: 0.0001
+            count: 100
             tstv_ratio: 2.0
         """
     )

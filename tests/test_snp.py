@@ -85,22 +85,22 @@ genome:
   heterozygosity: 0.5
 variants:
   SNP:
-    ratio: 0.001
+    count: 10
     tstv_ratio: 2.5
   MNP:
-    ratio: 0.002
+    count: 20
 """)
     variants = parse_config(str(config_file))['variants']
-    assert variants['SNP'] == {'ratio': 0.001, 'tstv_ratio': 2.5}
-    assert variants['MNP'] == {'ratio': 0.002, 'tstv_ratio': 2.0}
+    assert variants['SNP'] == {'count': 10, 'tstv_ratio': 2.5}
+    assert variants['MNP'] == {'count': 20, 'tstv_ratio': 2.0}
 
 
 @pytest.mark.parametrize(
     ('variant_type', 'settings', 'message'),
     [
-        ('SNP', 'tstv_ratio: 2.0', "SNP requires a 'ratio' parameter"),
-        ('MNP', 'ratio: 1.5', "MNP 'ratio' must be between 0 and 1"),
-        ('MNP', 'ratio: 0.1\n    tstv_ratio: -1', "MNP 'tstv_ratio' must be >= 0"),
+        ('SNP', 'tstv_ratio: 2.0', "SNP requires a 'count' parameter"),
+        ('MNP', 'count: 1.5', "MNP requires a 'count' parameter"),
+        ('MNP', 'count: 10\n    tstv_ratio: -1', "MNP 'tstv_ratio' must be >= 0"),
     ],
 )
 def test_parse_config_rejects_invalid_polymorphisms(tmp_path, variant_type, settings, message):
@@ -130,10 +130,10 @@ genome:
   heterozygosity: 1.0
 variants:
   SNP:
-    ratio: 0.002
+    count: 20
     tstv_ratio: 2.0
   MNP:
-    ratio: 0.002
+    count: 20
     tstv_ratio: 2.0
 """)
 

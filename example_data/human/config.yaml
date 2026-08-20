@@ -6,12 +6,12 @@ variants:
 
   # Single-Nucleotide Polymorphisms
   SNP:
-    ratio: 0.0001          # SNP density: 1 per 10,000 bp
+    count: 1558            # Approximately the previous density of 1 per 10,000 bp
     tstv_ratio: 2.0        # Transition/Transversion ratio (~2.0 for human genomes)
 
   # Multi-Nucleotide Polymorphisms
   MNP:
-    ratio: 0.0001          
+    count: 1558
     tstv_ratio: 2.0        
 
   # Deletions

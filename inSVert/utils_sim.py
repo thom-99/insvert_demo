@@ -40,18 +40,17 @@ def parse_config(config_path):
     
     # Iterate through the variants defined in YAML
     for sv_type, settings in config['variants'].items():
-        # DNA polymorphisms are ratio-based and do not use a length distribution.
+        # DNA polymorphisms  do not use a length distribution.
         if sv_type in ('SNP', 'MNP'):
-            ratio = settings.get('ratio')
-            if ratio is None:
-                raise ValueError(f"Config Error: {sv_type} requires a 'ratio' parameter (e.g., 0.0001)")
-            if not (0.0 < ratio < 1.0):
-                raise ValueError(f"Config Error: {sv_type} 'ratio' must be between 0 and 1, got {ratio}")
+            count = settings.get('count')
+            if (isinstance(count, bool) or not isinstance(count, int) or count < 0):
+                raise ValueError(f"Config Error: {sv_type} requires a 'count' parameter greater than or equal to 0, got {count}")
+
             tstv_ratio = settings.get('tstv_ratio', 2.0)
             if tstv_ratio < 0:
                 raise ValueError(f"Config Error: {sv_type} 'tstv_ratio' must be >= 0, got {tstv_ratio}")
             sv_data[sv_type] = {
-                'ratio': ratio,
+                'count': count,
                 'tstv_ratio': tstv_ratio
             }
             continue
