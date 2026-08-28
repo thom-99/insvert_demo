@@ -9,6 +9,8 @@ TODO.md
 # R history files
 .Rhistory
 
+*.orig
+
 # Python bytecode and cache
 __pycache__/
 .pytest_cache/
