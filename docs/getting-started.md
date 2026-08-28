@@ -22,7 +22,7 @@ gunzip hg38.fa.gz
 ```
 
 ### variant simulation
-for this tutorial we use the config.yaml file below, you can edit it to your likings
+for this tutorial we use the config.yaml file below, you can copy or [download](config.yaml) it and edit it to your likings
 
 ```
 genome:

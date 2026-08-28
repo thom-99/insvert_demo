@@ -237,6 +237,12 @@ def validate_vcf(vcf_path, fasta_path, target_ploidy=None):
             vcf_contigs = vcf.header.contigs
             fasta_chroms = set(fasta.references)
 
+            if len(vcf.header.samples) > 1:
+                raise ValueError(
+                    f"Multi-sample VCFs are not supported; found {len(vcf.header.samples)} samples. "
+                    "Subset the VCF to one sample before running inSVert."
+                )
+
             # Check 1: Do the VCF chromosomes exist in the FASTA?
             for vcf_chrom in vcf_contigs:
                 if vcf_chrom not in fasta_chroms:
@@ -254,22 +260,33 @@ def validate_vcf(vcf_path, fasta_path, target_ploidy=None):
                             f"Are you sure the VCF was called against this exact FASTA?"
                         )
 
-            if target_ploidy is not None:
-                for rec in vcf:
+            for rec in vcf:
 
-                    # Check 3: presence of a sample 
-                    if not rec.samples:
-                        raise ValueError(f"VCF record at {rec.chrom}:{rec.pos} has no sample genotype.")
+                if rec.alts is not None and len(rec.alts) > 1:
+                    raise ValueError(
+                        f"Multiallelic record at {rec.chrom}:{rec.pos} is not supported. "
+                        "Split or normalize it into biallelic records before running inSVert."
+                    )
 
-                    # Check 4: presence of a genotype
-                    gt = rec.samples[0].get('GT')
-                    if gt is None or len(gt) == 0:
-                        raise ValueError(f"VCF record at {rec.chrom}:{rec.pos} has no GT value")
+                # Check 3: presence of a sample
+                if not rec.samples:
+                    raise ValueError(f"VCF record at {rec.chrom}:{rec.pos} has no sample genotype.")
 
-                    # Check 5: ploidy matching with target_ploidy
+                # Check 4: presence of a genotype
+                gt = rec.samples[0].get('GT')
+                if gt is None or len(gt) == 0:
+                    raise ValueError(f"VCF record at {rec.chrom}:{rec.pos} has no GT value")
+
+                if any(allele not in (0, 1) for allele in gt):
+                    raise ValueError(
+                        f"VCF record at {rec.chrom}:{rec.pos} has unsupported GT={gt}. "
+                        "Only complete genotypes using reference allele 0 and first alternate allele 1 are supported."
+                    )
+
+                # Check 5: ploidy matching with target_ploidy
+                if target_ploidy is not None:
                     if len(gt) != target_ploidy:
                         raise ValueError(f"Ploidy mismatch at {rec.chrom}:{rec.pos}, GT={gt} has {len(gt)} alleles but --ploidy {target_ploidy} was specified")
-                        
 
     except Exception as e:
         raise ValueError(f"VCF Validation Failed: {e}")
