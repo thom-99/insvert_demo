@@ -3,7 +3,7 @@
 </p>
 
 # inSVert 
-inSVert is a bioinformatic utility deisgned to perform two distinct, yet interconnected, tasks:
+inSVert is a bioinformatic utility designed to perform two distinct, yet interconnected, tasks:
 - simulate genomic variants, encoding them into a VCF file
 - insert variants from a VCF file into a reference genome
 
@@ -11,7 +11,7 @@ inSVert is a bioinformatic utility deisgned to perform two distinct, yet interco
 On principle, inSVert main purpose lies on producing a synthetic ground-truth set of structural variants and inserting them into a reference genome, which will be further processed with the ultimate goal of benchmarking other tools such as variant callers and read mappers. 
 
 # Installation
-when installing inSVert, using a virtual enviroment is highly recommended
+when installing inSVert, using a virtual environment is highly recommended
 
 ensure your packaging tools are updated:
 ```bash
@@ -27,7 +27,7 @@ pip install .
 
 ## inSVert simulate
 The first module simulates a custom set of variants according to the user instructions provided in the config.yaml file.
-You can use the configfile.yaml available in this repo or generate a template one with 
+You can use the config.yaml available in this repo or generate a template one with 
 
 ```
 inSVert generate-configfile
@@ -36,7 +36,7 @@ then edit it based on what you want to simulate
 
 The user can choose to simulate variants according to a [pareto distribution](https://en.wikipedia.org/wiki/Pareto_distribution), which more closely reflects the natural distribution of variants (with fewer long variants and more short variants), or a [normal distribution](https://en.wikipedia.org/wiki/Normal_distribution).  
 
-inSVert also takes into account polyploid organisms: the user uses the 'ploidy' and 'heterozygousity' parameters to instruct the simulate module about how many genome copies he intends to simulate the variants on (most likely this corresponds to the ploidy number of the organism of interest) and the probability of variants of being heterozygous (present only on one genome copy). 
+inSVert also takes into account polyploid organisms: the user uses the 'ploidy' and 'heterozygosity' parameters to instruct the simulate module about how many genome copies he intends to simulate the variants on (most likely this corresponds to the ploidy number of the organism of interest) and the probability of variants of being heterozygous (present only on one genome copy). 
 
 to simulate variants, simply type 
 ```
@@ -64,7 +64,7 @@ optional arguments:
 ## inSVert insert
 given a VCF file , either produced by *inSVert simulate* or provided by the user, the  variants contained in the file will be programmatically inserted into a specified reference genome in fasta format. Although it may seem trivial, this is by far the most complex step as it requires careful tracking of the inserted variants to avoid indexing problems and to avoid placing variants one on top of the other. 
 
-For this reason it is a strict requirement that the VCF file is produced from the same reference in which we are trying to insert the variants and that the VCF file is sorted. Therefore, inSVert check both requiremenrs and take care of sorting the VCF file if not already sorted.
+For this reason it is a strict requirement that the VCF file is produced from the same reference in which we are trying to insert the variants and that the VCF file is sorted. Therefore, inSVert checks both requirements and take care of sorting the VCF file if not already sorted.
 
 
 to insert variants from a sorted VCF to a reference genome, simply type 
@@ -99,10 +99,13 @@ optional arguments:
     named output.fa with ploidy 2 produces output_hap1.fa and output_hap2
 ```
 
+# More documentation
 
-# Architecture 
+- [Getting started](docs/getting-started.md)
+- [How variant simulation works](docs/under-the-hood/variant-simulation.md)
+- [How variant insertion works](docs/under-the-hood/variant-insertion.md)
+- [Example datasets](example_data/README.md)
 
-![Alt text](img/inSVert_whitebackground.png)
 
-inSVert has a decoupled architecture, designed so that its modules can be used as a standalone bioinformatic utility. 
+
 
