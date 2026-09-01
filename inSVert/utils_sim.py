@@ -118,8 +118,7 @@ def parse_config(config_path):
             # Create array of possible values (e.g. [2, 3, 4, 5])
             possible_cns = list(range(cn_min, cn_max + 1))
             
-            # check and normalize weights to sum 1
-            probs = None
+            # check weights
             if weights:
                 if len(weights) != len(possible_cns):
                     raise ValueError(
@@ -441,7 +440,6 @@ def track_sv(sv_positions, chrom, start, end, genotype_str):
     alleles = genotype_str.split('|') # Or '|' depending on generate_genotype output
     for hap_idx, allele in enumerate(alleles):
         if allele == "1":
-            import bisect
             bisect.insort(sv_positions[chrom][hap_idx], (start, end))
 
 

@@ -445,13 +445,6 @@ def prefetch_translocations(vcf_path, ref_path):
 # checks if the vcf file is compressed and indexed, if not it provides to do so and return
 
 
-''' removes a file and its associated index (.tbi)'''
-def cleanup_indexed_vcf(filepath):
-    if filepath and os.path.exists(filepath):
-        os.remove(filepath)
-    if filepath and os.path.exists(filepath + ".tbi"):
-        os.remove(filepath + ".tbi")
-
 
 
 # 1. Helper: Sorts VCF using Python RAM (No external tools needed)

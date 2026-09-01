@@ -1,7 +1,6 @@
 from . import VariantObjects
 from . import utils_sim
 from collections import defaultdict
-import bisect
 import random
 import pysam
 
