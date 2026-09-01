@@ -180,3 +180,23 @@ chr1\t3\tinSVert.MNP.1\tCC\tTT\t.\tPASS\tVT=MNP\tGT\t1
         sequence = modified.fetch('chr1')
     assert sequence == 'AATTGGTT'
     assert len(sequence) == 8
+
+
+def test_insert_accepts_snp_vcf_without_sv_info_headers(tmp_path):
+    fasta_path = tmp_path / "ref.fa"
+    fasta_path.write_text(">chr1\nAACCGGTT\n")
+    pysam.faidx(str(fasta_path))
+
+    vcf_path = tmp_path / "snp.vcf"
+    vcf_path.write_text("""##fileformat=VCFv4.2
+##contig=<ID=chr1,length=8>
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE
+chr1\t3\tsnp1\tC\tT\t.\tPASS\t.\tGT\t1
+""")
+
+    output_path = tmp_path / "modified.fa"
+    insert.run(0.5, str(fasta_path), str(vcf_path), 1, str(output_path))
+
+    with pysam.FastaFile(str(output_path)) as modified:
+        assert modified.fetch("chr1") == "AATCGGTT"

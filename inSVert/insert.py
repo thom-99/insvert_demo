@@ -69,7 +69,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
         gt = rec.samples[0]['GT']
         if not rec.samples[0].phased and len(set(gt)) > 1:
             unphased_count += 1
-        if rec.info.get("SVTYPE") == "DUP" and rec.samples[0].get("CN") is None:
+        if utils_ins.info_get(rec, "SVTYPE") == "DUP" and utils_ins.sample_get(rec.samples[0], "CN") is None:
             missing_cn_dup_count += 1
     total_steps = total_variants * ploidy 
 
@@ -144,7 +144,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                     for variant_index, var in enumerate(chrom_variants):
                         progress.advance(task)
 
-                        svtype = var.info.get("SVTYPE")
+                        svtype = utils_ins.info_get(var, "SVTYPE")
                         if svtype is not None and svtype not in supported_svtypes:
                             if svtype not in warned_unsupported_svtypes:
                                 progress.console.print(
@@ -173,9 +173,9 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                             # Universal key: EVENT tag for BNDs (so all mates
                             # in the same event get the same assignment),
                             # (chrom, pos) for everything else.
-                            svtype_check = var.info.get("SVTYPE")
+                            svtype_check = utils_ins.info_get(var, "SVTYPE")
                             if svtype_check == "BND":
-                                var_key = var.info.get("EVENT")
+                                var_key = utils_ins.info_get(var, "EVENT")
                             else:
                                 var_key = (var.chrom, var.pos)
 
@@ -206,7 +206,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                         if truth_vcf:
                             variant_key = (chrom, variant_index)
                             if svtype == "BND":
-                                event_id = var.info.get("EVENT")
+                                event_id = utils_ins.info_get(var, "EVENT")
                                 if event_id is not None:
                                     bnd_expected_haplotypes[event_id].add(haplotype)
                             else:
@@ -253,7 +253,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
                         # comoute the length of the variant, BNDs are excluded as they do not have a svlength
                         if svtype != "BND":
-                            svlen = var.info.get("SVLEN")
+                            svlen = utils_ins.info_get(var, "SVLEN")
                             if isinstance(svlen, tuple): svlen = svlen[0]
                             if svlen is None: svlen = var.stop - var.pos
                             svlen = abs(svlen)
@@ -290,7 +290,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
                             elif svtype == 'DUP':
                                 vcf_sample_name = list(var.samples.keys())[0] if var.samples else None
-                                cn = var.samples[vcf_sample_name].get('CN') if vcf_sample_name else None
+                                cn = utils_ins.sample_get(var.samples[vcf_sample_name], 'CN') if vcf_sample_name else None
                                 if cn is None:
                                     cn = 2
 
@@ -302,7 +302,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                                 variant_haplotypes[variant_key]["inserted"].add(haplotype)
 
                         if svtype == 'BND':
-                            event_id = var.info.get('EVENT')
+                            event_id = utils_ins.info_get(var, 'EVENT')
 
                             # ACTION: the 'CUT' i.e. source of cut & paste TRAs
                             del_job = tra_cache["deletions"].get(chrom, {}).get((var.pos, event_id))
@@ -393,8 +393,8 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                     record_index = per_chrom_index[record.chrom]
                     per_chrom_index[record.chrom] += 1
 
-                    if record.info.get("SVTYPE") == "BND":
-                        keep = record.info.get("EVENT") in successful_bnd_events
+                    if utils_ins.info_get(record, "SVTYPE") == "BND":
+                        keep = utils_ins.info_get(record, "EVENT") in successful_bnd_events
                     else:
                         keep = (record.chrom, record_index) in successful_variants
 

@@ -8,6 +8,20 @@ import random
 import pysam
 from collections import defaultdict
 
+def info_get(record, key, default=None):
+    """Return an INFO value, or the default when its header declaration is absent."""
+    try:
+        return record.info.get(key, default)
+    except (ValueError, KeyError):
+        return default
+
+def sample_get(sample, key, default=None):
+    """Return a sample value, or the default when its FORMAT declaration is absent."""
+    try:
+        return sample.get(key, default)
+    except (ValueError, KeyError):
+        return default
+
 def generate_seq(length:int, gc_content:float) -> str:
     """Generates a random DNA sequence as a string."""
     if length < 0:
@@ -75,7 +89,7 @@ def extract_explicit_ins_sequence(var):
         )
     
     # Validate length against SVLEN
-    svlen = var.info.get("SVLEN")
+    svlen = info_get(var, "SVLEN")
     if isinstance(svlen, tuple):
         svlen = svlen[0]
     
@@ -351,8 +365,8 @@ def prefetch_translocations(vcf_path, ref_path):
     events = defaultdict(list)
     orphan_bnds = 0
     for var in vcf:
-        if var.info.get("SVTYPE") == "BND":
-            event_tag = var.info.get("EVENT")
+        if info_get(var, "SVTYPE") == "BND":
+            event_tag = info_get(var, "EVENT")
             if event_tag is None:
                 orphan_bnds += 1
                 continue
@@ -378,7 +392,7 @@ def prefetch_translocations(vcf_path, ref_path):
                 continue # skip BNDs that have been already paired
 
             # MATEID is required to reconstruct adjacencies 
-            mate_ids = r.info.get("MATEID")
+            mate_ids = info_get(r, "MATEID")
 
             if not mate_ids:
                 invalid_reason = (f"BND {r.id or f'{r.chrom}:{r.pos}'} in EVENT={event_id} has no MATEID")
