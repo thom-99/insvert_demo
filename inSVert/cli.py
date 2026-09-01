@@ -272,7 +272,20 @@ def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants, sampl
                 console.print(f"[bold red]Error:[/bold red] {e}")
                 raise click.Abort()
                 
-    console.print(f"[bold green]✔ Done![/bold green] Modified genome saved to [underline]{output}[/underline]\n")
+    if split_haplotypes:
+        output_path = Path(output)
+        output_paths = [
+            output_path.with_name(
+                f"{output_path.stem}_hap{haplotype + 1}{output_path.suffix}"
+            )
+            for haplotype in range(ploidy)
+        ]
+        console.print(
+            f"[bold green]✔ Done![/bold green] Modified genomes saved to "
+            f"[underline]{', '.join(map(str, output_paths))}[/underline]\n"
+        )
+    else:
+        console.print(f"[bold green]✔ Done![/bold green] Modified genome saved to [underline]{output}[/underline]\n")
     
  
 
