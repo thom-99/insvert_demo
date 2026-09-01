@@ -1,3 +1,4 @@
+from . import __version__
 from . import input_validation
 from . import simulate
 from . import insert
@@ -13,7 +14,7 @@ click.rich_click.USE_RICH_MARKUP = True
 console = Console()
 
 @click.group()
-@click.version_option("0.1.0", prog_name="inSVert")
+@click.version_option(__version__, prog_name="inSVert")
 def cli():
     """
     [bold magenta]inSVert[/bold magenta]: Structural Variant Simulation & Insertion Toolkit.

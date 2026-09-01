@@ -19,7 +19,7 @@ translocations, while keeping deletions, insertions, duplications, and
 inversions comparatively rare. The `TRA_COPY` and `TRA_CUT` settings use
 30 kb events and include a 20% probability of reverse orientation.
 
-if you have space, try downaloading the full human genome
+if you have space, try downloading the full human genome
 ```bash
 wget -c https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/latest/hg38.fa.gz
 gunzip hg38.fa.gz

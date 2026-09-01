@@ -6,7 +6,7 @@ contents:
 3. [variant insertion](#variant-insertion)
 
 ### download
-download inSVert, using a virtual enviroment is highly recommended
+download inSVert, using a virtual environment is highly recommended
 ```bash
 python -m pip install --upgrade pip setuptools wheel
 

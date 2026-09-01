@@ -422,7 +422,7 @@ def prefetch_translocations(vcf_path, ref_path):
         # Check if the translocation is valid and categorize it
         res = is_valid_tra(event_id, adjacencies)
         if not res:
-            print(f"WARNING: BND EVENT={event_id} could not be reconstructed as a valid traslocation. SKipping this BND event.")
+            print(f"WARNING: BND EVENT={event_id} could not be reconstructed as a valid translocation. Skipping this BND event.")
             continue
         
         tra_type, src_chr, (s_start, s_end), snk_chr, snk_pos, del_pos, is_inverted, attach_after = res

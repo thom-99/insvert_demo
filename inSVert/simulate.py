@@ -72,7 +72,7 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
                         if attempts > 3:
                             print(f'{svtype} n: {count-1} could not be placed after 3 attempts, skipping')
                             break    
-                        print(f'{svtype} exceeds the chormsome boundaries or overlaps with another SV, fetching a new position')
+                        print(f'{svtype} exceeds the chromsome boundaries or overlaps with another SV, fetching a new position')
                         pos = utils_sim.select_pos(chrom_length)
                         ref_base = utils_sim.fetch_ref_base(chrom, pos, ref_fasta)
                         INS = VariantObjects.Insertion(chrom, pos, l, id, gt, ref_base)
@@ -111,7 +111,7 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
                         if attempts > 3:
                             print(f'{svtype} n: {count-1} could not be placed after 3 attempts, skipping')
                             break                     
-                        print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
+                        print(f'{svtype} exceeds the chromsome boundaries, fetching a new position')
                         pos = utils_sim.select_pos(chrom_length)
                         ref_base = utils_sim.fetch_ref_base(chrom, pos, ref_fasta)
                         DEL = VariantObjects.Deletion(chrom, pos, l, id, gt, ref_base)
@@ -148,7 +148,7 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
                         if attempts > 3:
                             print(f'{svtype} n: {count-1} could not be placed after 3 attempts, skipping')
                             break                     
-                        print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
+                        print(f'{svtype} exceeds the chromsome boundaries, fetching a new position')
                         pos = utils_sim.select_pos(chrom_length)
                         ref_base = utils_sim.fetch_ref_base(chrom, pos, ref_fasta)
                         INV = VariantObjects.Inversion(chrom, pos, l, id, gt, ref_base)
@@ -187,7 +187,7 @@ def run(config_path, fasta_path, output_file, seed=None, excluded_bed=None, non_
                         if attempts > 3:
                             print(f'{svtype} n: {count-1} could not be placed after 3 attempts, skipping')
                             break                     
-                        print(f'{svtype} exceeds the chormsome boundaries, fetching a new position')
+                        print(f'{svtype} exceeds the chromsome boundaries, fetching a new position')
                         pos = utils_sim.select_pos(chrom_length)
                         ref_base = utils_sim.fetch_ref_base(chrom, pos, ref_fasta)
                         DUP = VariantObjects.Duplication(chrom, pos, l, id, gt, ref_base, cn)
