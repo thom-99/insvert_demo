@@ -28,8 +28,10 @@ def test_split_haplotypes_reports_actual_output_paths(tmp_path, monkeypatch):
             "--split-haplotypes",
         ],
     )
+    
+    unwrapped_output = "".join(result.output.splitlines())
 
-    assert result.exit_code == 0, result.output
-    assert str(tmp_path / "edited_hap1.fasta") in result.output
-    assert str(tmp_path / "edited_hap2.fasta") in result.output
-    assert f"Modified genome saved to {output}" not in result.output
+    assert result.exit_code == 0, unwrapped_output
+    assert str(tmp_path / "edited_hap1.fasta") in unwrapped_output
+    assert str(tmp_path / "edited_hap2.fasta") in unwrapped_output
+    assert f"Modified genome saved to {output}" not in unwrapped_output
