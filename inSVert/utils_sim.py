@@ -199,7 +199,7 @@ def parse_bed(bed_path:str):
             if line.startswith(('#', 'track', 'browser')): continue
             parts = line.strip().split('\t')
             # to add: print a warning to the screen that the line is not properly formatted
-            if len(parts) != 3: continue
+            if len(parts) < 3: continue
             
             chrom, start, end = parts[0], int(parts[1]), int(parts[2])
             if chrom not in excluded_ranges:
