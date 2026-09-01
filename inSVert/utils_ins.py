@@ -458,9 +458,18 @@ def sort_vcf(input_path, output_path):
         records = list(infile)
     finally:
         infile.close()
+
+    unknown_contigs = sorted({
+        record.chrom for record in records if record.chrom not in contig_map
+    })
+    if unknown_contigs:
+        raise ValueError(
+            "VCF records reference contigs missing from the VCF header: "
+            + ", ".join(unknown_contigs)
+        )
     
     # Sort: First by Chromosome ID, then by Position
-    records.sort(key=lambda r: (contig_map.get(r.chrom, 9999), r.pos))
+    records.sort(key=lambda r: (contig_map[r.chrom], r.pos))
     
     # Write to output with 'wz' mode (Force BGZF compression)
     outfile = pysam.VariantFile(output_path, mode='wz', header=header)

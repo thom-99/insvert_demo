@@ -1,6 +1,7 @@
 import pytest
 import io
 from inSVert.utils_ins import reverse_complement, generate_seq, apply_insertion, apply_deletion
+from inSVert.utils_ins import sort_vcf
 
 def test_reverse_complement_basic():
     assert reverse_complement('ACGT') == 'ACGT'
@@ -54,3 +55,19 @@ def test_apply_deletion():
 def test_apply_deletion_negative_length():
     new_pos = apply_deletion(100, -50)
     assert new_pos == 150
+
+
+def test_sort_vcf_rejects_record_contig_missing_from_header(tmp_path):
+    input_vcf = tmp_path / "input.vcf"
+    input_vcf.write_text(
+        "##fileformat=VCFv4.2\n"
+        "##contig=<ID=chr1,length=100>\n"
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+        "unknown\t10\t.\tA\tT\t.\tPASS\t.\n"
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="VCF records reference contigs missing from the VCF header: unknown",
+    ):
+        sort_vcf(input_vcf, tmp_path / "output.vcf.gz")

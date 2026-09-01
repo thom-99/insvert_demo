@@ -255,7 +255,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
                         if svtype != "BND":
                             svlen = var.info.get("SVLEN")
                             if isinstance(svlen, tuple): svlen = svlen[0]
-                            if svlen is None: svlen = var.stop - var.start
+                            if svlen is None: svlen = var.stop - var.pos
                             svlen = abs(svlen)
 
                             # Write the padding base before standard SVs
