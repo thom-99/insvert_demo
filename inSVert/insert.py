@@ -28,6 +28,16 @@ class BufferWriter:
             self.fh.write(self.buffer + '\n')
             self.buffer = ""
 
+
+def write_ref_span(writer, ref, chrom, start, end, block=1_000_000):
+    """Copy a reference span to the output in bounded blocks.
+    this approach allows to use much less RAM and keeps the execution speed similar"""
+    while start < end:
+        stop = min(start + block, end)
+        writer.write(ref.fetch(chrom, start, stop))
+        start = stop
+
+
 def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=False, sample_name="Sample", split_haplotypes=False, truth_vcf=None):
     random.seed(42)
 
@@ -225,8 +235,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
                         # 1. Write Reference up to this variant
                         if start > ref_pos:
-                            chunk = ref.fetch(chrom, ref_pos, start)
-                            writer.write(chunk)
+                            write_ref_span(writer, ref, chrom, ref_pos, start)
                             ref_pos = start
 
                         # 2. Dispatch to utils_ins based on Type
@@ -346,8 +355,7 @@ def run(gc_content, ref_fasta, vcf_file, ploidy, output_fasta, skip_unphased=Fal
 
                     # 3. Finish Chromosome
                     if ref_pos < chrom_len:
-                        chunk = ref.fetch(chrom, ref_pos, chrom_len)
-                        writer.write(chunk)
+                        write_ref_span(writer, ref, chrom, ref_pos, chrom_len)
 
                     writer.flush()
     
