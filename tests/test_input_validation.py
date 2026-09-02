@@ -3,6 +3,57 @@ import pytest
 from inSVert import input_validation
 
 
+def write_normal_config(
+    path, sigma, count=1, median=100, minimum=100, maximum=101
+):
+    sigma_line = "" if sigma is None else f"      sigma: {sigma}\n"
+    path.write_text(
+        f"""\
+genome:
+  ploidy: 2
+  heterozygosity: 0.5
+variants:
+  INS:
+    count: {count}
+    distribution: normal
+    parameters:
+      median_length: {median}
+{sigma_line}      min_length: {minimum}
+      max_length: {maximum}
+""",
+        encoding="utf-8",
+    )
+
+
+def test_validate_config_rejects_impractical_normal_distribution(tmp_path):
+    config_path = tmp_path / "impractical.yaml"
+    write_normal_config(config_path, sigma=1_000_000)
+
+    with pytest.raises(ValueError, match="reduce sigma or widen the range"):
+        input_validation.validate_config(config_path)
+
+
+def test_validate_config_accepts_reasonable_normal_distribution(tmp_path):
+    config_path = tmp_path / "reasonable.yaml"
+    write_normal_config(config_path, sigma=10)
+
+    assert input_validation.validate_config(config_path) is True
+
+
+def test_validate_config_checks_default_normal_sigma(tmp_path):
+    config_path = tmp_path / "impractical_default.yaml"
+    write_normal_config(
+        config_path,
+        sigma=None,
+        median=1_000_000,
+        minimum=1_000_000,
+        maximum=1_000_000,
+    )
+
+    with pytest.raises(ValueError, match="reduce sigma or widen the range"):
+        input_validation.validate_config(config_path)
+
+
 def write_vcf(path, sample_names, alt="T", genotypes=None):
     if genotypes is None:
         genotypes = ["0|1"]

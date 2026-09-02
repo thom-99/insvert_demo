@@ -20,7 +20,7 @@ variants:
     distribution: "normal"   # type of distr. for variant lengths (pareto/normal)
     parameters:
       median_length: 5000      # Target median length in bp
-      sigma:             # standard deviation for the normal distribution
+      sigma: 1000000000            # standard deviation for the normal distribution
       min_length: 50        # minimum length of the variant
       max_length: 100000     # maximum length of the variant
 

@@ -6,6 +6,22 @@ import yaml
 
 ### INPUT CONFIG VALIDATION ###
 
+MIN_LENGTH_ACCEPTANCE_RATE = 0.001
+
+
+def normal_acceptance_probability(mu, sigma, minimum, maximum):
+    """Return the probability that int(N(mu, sigma)) is within the limits."""
+    if sigma == 0:
+        return 1.0 if minimum <= mu <= maximum else 0.0
+
+    scale = sigma * math.sqrt(2)
+    probability = 0.5 * (
+        math.erf((maximum + 1 - mu) / scale)
+        - math.erf((minimum - mu) / scale)
+    )
+    return max(0.0, min(1.0, probability))
+
+
 def validate_config(config_path):
     """Validate a simulation YAML config and report defaults and ignored fields."""
     if not os.path.exists(config_path):
@@ -150,12 +166,35 @@ def validate_config(config_path):
 
         sigma = parameters.get('sigma')
         if distribution == 'normal':
+            effective_sigma = None
             if sigma is None:
                 warnings.append(
                     f"'{path}.parameters.sigma' is not specified; using default 10% of median_length."
                 )
+                if 'median_length' in lengths:
+                    effective_sigma = lengths['median_length'] * 0.1
             elif not is_number(sigma) or sigma < 0:
                 errors.append(f"'{path}.parameters.sigma' must be a number greater than or equal to 0.")
+            else:
+                effective_sigma = sigma
+
+            if (
+                effective_sigma is not None
+                and isinstance(count, int)
+                and not isinstance(count, bool)
+                and count > 0
+                and len(lengths) == 3
+                and minimum <= median <= maximum
+            ):
+                acceptance_rate = normal_acceptance_probability(
+                    median, effective_sigma, minimum, maximum
+                )
+                if acceptance_rate < MIN_LENGTH_ACCEPTANCE_RATE:
+                    errors.append(
+                        f"'{path}' normal distribution accepts approximately "
+                        f"{acceptance_rate:.6%} of sampled lengths in the range "
+                        f"{minimum}-{maximum}; reduce sigma or widen the range."
+                    )
         elif sigma is not None:
             warnings.append(f"'{path}.parameters.sigma' is ignored for a Pareto distribution.")
 
