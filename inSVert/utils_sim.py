@@ -343,7 +343,7 @@ def buildheader(chroms, lengths, reference_path=None, seed=None):
 
     # FORMAT fields
     header_lines.append('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">')
-    header_lines.append('##FORMAT=<ID=CN,Number=1,Type=Integer,Description="Copy number">')
+    header_lines.append('##FORMAT=<ID=CN,Number=1,Type=Integer,Description="Copy number, including original copy. Each ALT carrying haplotype will have this Copy Number.">')
 
     header_lines.append("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE")
 
