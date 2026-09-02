@@ -262,16 +262,15 @@ def insert_cmd(reference, vcf, ploidy, gc, output, skip_unphased_variants, sampl
     console.print(Panel(f"Inserting Variants from [yellow]{vcf}[/yellow]", title="[bold green]inSVert Insert[/bold green]", border_style="green"))    
 
     # 2. Execution with Spinner
-    with console.status(f"[bold green]Processing Genome (GC={gc})...[/bold green]", spinner="dots"):
-            try:
-                insert.run(
-                    gc, reference, vcf, ploidy, output,
-                    skip_unphased_variants, sample_name, split_haplotypes,
-                    truth_vcf
-                )
-            except Exception as e:
-                console.print(f"[bold red]Error:[/bold red] {e}")
-                raise click.Abort()
+    try:
+        insert.run(
+            gc, reference, vcf, ploidy, output,
+            skip_unphased_variants, sample_name, split_haplotypes,
+            truth_vcf
+        )
+    except Exception as e:
+        console.print(f"[bold red]Error:[/bold red] {e}")
+        raise click.Abort()
                 
     if split_haplotypes:
         output_path = Path(output)
