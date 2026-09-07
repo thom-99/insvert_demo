@@ -1,0 +1,14 @@
+* text=auto
+
+*.fa    text eol=lf
+*.fasta text eol=lf
+*.fna   text eol=lf
+*.fai   text eol=lf
+*.vcf   text eol=lf
+*.bed   text eol=lf
+
+*.gz  binary
+*.bgz binary
+*.bcf binary
+*.tbi binary
+*.csi binary
