@@ -149,12 +149,8 @@ returns a tuple of all the ([chromosomes],[lengths])
 '''
 def read_fai(fasta_path:str):
  
-    #check suffix 
-    if fasta_path.endswith('.fasta') or fasta_path.endswith('.fa'):
-        fasta_file = fasta_path
-        fai_file = fasta_path + '.fai'
-    else:
-        raise ValueError(f'input file must be a fasta file ending with .fa or .fasta : {fasta_path}')
+    fasta_file = fasta_path
+    fai_file = fasta_path + '.fai'
 
     if not os.path.exists(fasta_file):
         raise FileNotFoundError(f'fasta file not found : {fasta_file}')
