@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="img/small_logo.png" alt="inSVert Logo" width="300">
+  <img src="img/altlogo.png" alt="inSVert Logo" width="300">
 </p>
 
 # inSVert 

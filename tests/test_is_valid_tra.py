@@ -57,6 +57,20 @@ def test_tra_cut_intra_valid(make_bnd):
     adjacencies = [(H1, H2), (P1, P2), (P3, P4)]
     assert is_valid_tra('CUT2', adjacencies) == ('TRA_CUT', 'chr1', (3000, 4000), 'chr1', 7000, 3000, False, True)
 
+def test_tra_cut_reverse_intra_near_destination_selects_heal(make_bnd):
+    P1 = make_bnd('chr1', 90, 'CUT3.P1', 'A]chr1:200]', 'CUT3.P2', 'CUT3')
+    P2 = make_bnd('chr1', 200, 'CUT3.P2', 'A]chr1:90]', 'CUT3.P1', 'CUT3')
+    P3 = make_bnd('chr1', 91, 'CUT3.P3', '[chr1:101[A', 'CUT3.P4', 'CUT3')
+    P4 = make_bnd('chr1', 101, 'CUT3.P4', '[chr1:91[A', 'CUT3.P3', 'CUT3')
+    H1 = make_bnd('chr1', 100, 'CUT3.H1', 'A[chr1:201[', 'CUT3.H2', 'CUT3')
+    H2 = make_bnd('chr1', 201, 'CUT3.H2', ']chr1:100]A', 'CUT3.H1', 'CUT3')
+
+    adjacencies = [(P1, P2), (P3, P4), (H1, H2)]
+
+    assert is_valid_tra('CUT3', adjacencies) == (
+        'TRA_CUT', 'chr1', (100, 200), 'chr1', 90, 100, True, True
+    )
+
 def test_tra_cut_no_heal_returns_none(make_bnd):
     P1 = make_bnd('chr1', 500, 'P1', 'T[chr2:1001[', 'P2')
     P2 = make_bnd('chr2', 1001, 'P2', ']chr1:500]T', 'P1')

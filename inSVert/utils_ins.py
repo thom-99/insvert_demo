@@ -279,7 +279,21 @@ def is_valid_tra(event_id, adjacencies):
             _, r, m = intra_adjs[0]
             heal_adj = (r, m)
         else:
-            _, r, m = min(intra_adjs, key=lambda t: abs(t[1].pos - t[2].pos))
+            # Reverse paste adjacencies have reverse-facing brackets, while the
+            # source-healing adjacency remains forward-facing.  The first part
+            # of this tuple therefore puts a fully forward pair first (False
+            # sorts before True).  For forward events all pairs tie there, so
+            # the span preserves the existing shortest-pair fallback.
+            _, r, m = min(
+                intra_adjs,
+                key=lambda t: (
+                    any(
+                        parse_bnd_orientation(record.alts[0])[0] is not False
+                        for record in t[1:]
+                    ),
+                    abs(t[1].pos - t[2].pos),
+                ),
+            )
             heal_adj = (r, m)
         
         # VALIDATION: Verify the Heal span is consistent (span > 1, i.e., L >= 1).
