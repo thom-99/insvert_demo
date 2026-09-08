@@ -494,6 +494,8 @@ def prepare_vcf(vcf_path):
     # Case 2: We need to sort it. 
     # We define the target name (e.g. data.vcf -> data.vcf.gz)
     sorted_vcf_path = vcf_path + ".gz"
+    if os.path.exists(sorted_vcf_path):
+        raise FileExistsError(f"Refusing to overwrite: {sorted_vcf_path}")
     
     print(f"Sorting and indexing variants to {sorted_vcf_path}...")
     
