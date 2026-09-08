@@ -148,15 +148,11 @@ def apply_duplication(ref_file, chrom: str, start: int, length: int, copy_number
     # 1. Fetch the sequence unit
     dup_unit = ref_file.fetch(chrom, start, start + length)
     
-    # 2. Create the full sequence (Original + Copies)
-    # We construct the payload similar to an insertion
-    full_seq = dup_unit * copy_number
-    
-    # 3. Delegate to insertion logic
-    apply_insertion(out_buffer, full_seq)
-    
-    # 4. Advance reference pointer past the original unit 
-    # (because we just wrote it as part of full_seq)
+    # 2. apply the dup_unit [cn] times
+    for _ in range(copy_number):
+        apply_insertion(out_buffer, dup_unit)
+
+    # 3. Advance reference pointer past the original unit 
     return start + length
 
 
